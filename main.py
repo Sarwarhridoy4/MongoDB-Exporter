@@ -28,6 +28,10 @@ def export_collections_to_json(uri, db_name, output_dir, progress_label):
 
             # Check if the collection is empty
             if collection.count_documents({}) > 0:
+                # Get the total number of documents in the collection
+                total_documents = collection.count_documents({})
+                processed_documents = 0
+
                 # Calculate the percentage completed
                 percentage = ((index + 1) / total_collections) * 100
                 progress_label.config(text=f"Exporting: {collection_name}.json ({percentage:.2f}%)")
@@ -36,7 +40,12 @@ def export_collections_to_json(uri, db_name, output_dir, progress_label):
                 # Export collection to JSON
                 with open(os.path.join(output_dir, f"{collection_name}.json"), "w") as file:
                     cursor = collection.find()
-                    file.write(dumps(cursor, indent=4))
+                    for document in cursor:
+                        file.write(dumps(document, indent=4) + "\n")
+                        processed_documents += 1
+                        document_percentage = (processed_documents / total_documents) * 100
+                        progress_label.config(text=f"Exporting: {collection_name}.json ({percentage:.2f}%) - {processed_documents}/{total_documents} documents ({document_percentage:.2f}%)")
+                        progress_label.update_idletasks()
 
         # Close the connection
         client.close()
