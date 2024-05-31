@@ -18,13 +18,20 @@ def export_collections_to_json(uri, db_name, output_dir, progress_label):
 
         # List all collections in the database
         collections = db.list_collection_names()
+        total_collections = len(collections)
 
-        for collection_name in collections:
+        if total_collections == 0:
+            progress_label.config(text="No collections found in the database.")
+            return
+
+        for index, collection_name in enumerate(collections):
             collection = db[collection_name]
 
             # Check if the collection is empty
             if collection.count_documents({}) > 0:
-                progress_label.config(text=f"Exporting: {collection_name}.json")
+                # Calculate the percentage completed
+                percentage = ((index + 1) / total_collections) * 100
+                progress_label.config(text=f"Exporting: {collection_name}.json ({percentage:.2f}%)")
                 progress_label.update_idletasks()
 
                 # Export collection to JSON
