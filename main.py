@@ -10,6 +10,21 @@ from PyQt5.QtCore import Qt
 from pymongo import MongoClient
 from bson.json_util import dumps
 
+# # https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS2
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+
+
 class MongoDBExporter(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -18,7 +33,7 @@ class MongoDBExporter(QMainWindow):
         self.setGeometry(100, 100, 600, 400)
 
         # Set window icon (favicon)
-        self.setWindowIcon(QIcon("./asset/favicon.png"))  # Provide the path to your favicon file
+        self.setWindowIcon(QIcon(resource_path("./asset/favicon.png")))  # Provide the path to your favicon file
 
         # Main layout
         main_layout = QVBoxLayout()
@@ -26,7 +41,7 @@ class MongoDBExporter(QMainWindow):
         # Title and logo layout
         title_layout = QHBoxLayout()
         self.logo_label = QLabel(self)
-        pixmap = QPixmap("./asset/mongo_icon.png")  # Provide the path to your logo image
+        pixmap = QPixmap(resource_path("./asset/mongo_icon.png"))  # Provide the path to your logo image
         self.logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.title_label = QLabel("MongoDB Exporter", self)
         self.title_label.setFont(QFont('Arial', 18, QFont.Bold))
