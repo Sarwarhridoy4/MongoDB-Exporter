@@ -5,7 +5,6 @@ from tkinter import ttk, filedialog, messagebox
 from pymongo import MongoClient
 from bson.json_util import dumps
 
-
 def export_collections_to_json(uri, db_name, output_dir, progress_label):
     try:
         # Create the output directory if it doesn't exist
@@ -47,13 +46,11 @@ def export_collections_to_json(uri, db_name, output_dir, progress_label):
         progress_label.config(text="Error occurred!")
         messagebox.showerror("Error", f"An error occurred: {e}")
 
-
 def browse_output_dir():
     directory = filedialog.askdirectory()
     if directory:
         output_dir_entry.delete(0, tk.END)
         output_dir_entry.insert(0, directory)
-
 
 def start_export():
     uri = uri_entry.get()
@@ -65,40 +62,54 @@ def start_export():
     else:
         export_collections_to_json(uri, db_name, output_dir, progress_label)
 
-
 # GUI setup
 root = tk.Tk()
 root.title("MongoDB Exporter")
+root.geometry("500x500")
 
-frame = ttk.Frame(root, padding="10")
-frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+# Apply a modern theme
+style = ttk.Style()
+style.theme_use('clam')
+
+# Customize styles
+style.configure('TLabel', font=('Helvetica', 12))
+style.configure('TEntry', font=('Helvetica', 12))
+style.configure('TButton', font=('Helvetica', 12), padding=5)
+style.configure('TFrame', padding=10)
+
+frame = ttk.Frame(root)
+frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=10)
 
 # URI
-ttk.Label(frame, text="MongoDB URI:").grid(row=0, column=0, sticky=tk.W)
+ttk.Label(frame, text="MongoDB URI:").grid(row=0, column=0, sticky=tk.W, pady=5)
 uri_entry = ttk.Entry(frame, width=50)
 uri_entry.grid(row=0, column=1, sticky=(tk.W, tk.E))
 
 # Database Name
-ttk.Label(frame, text="Database Name:").grid(row=1, column=0, sticky=tk.W)
+ttk.Label(frame, text="Database Name:").grid(row=1, column=0, sticky=tk.W, pady=5)
 db_name_entry = ttk.Entry(frame, width=50)
 db_name_entry.grid(row=1, column=1, sticky=(tk.W, tk.E))
 
 # Output Directory
-ttk.Label(frame, text="Output Directory:").grid(row=2, column=0, sticky=tk.W)
+ttk.Label(frame, text="Output Directory:").grid(row=2, column=0, sticky=tk.W, pady=5)
 output_dir_entry = ttk.Entry(frame, width=50)
 output_dir_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
 
+# Buttons Frame
+buttons_frame = ttk.Frame(frame)
+buttons_frame.grid(row=3, column=1, sticky=tk.E, pady=10)
+
 # Browse Button
-browse_button = ttk.Button(frame, text="Browse", command=browse_output_dir)
-browse_button.grid(row=2, column=2, sticky=tk.W)
+browse_button = ttk.Button(buttons_frame, text="Browse", command=browse_output_dir)
+browse_button.grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
 
 # Export Button
-export_button = ttk.Button(frame, text="Export", command=start_export)
-export_button.grid(row=3, column=1, pady=10, sticky=tk.E)
+export_button = ttk.Button(buttons_frame, text="Export", command=start_export)
+export_button.grid(row=0, column=1, sticky=tk.W)
 
 # Progress Label
 progress_label = ttk.Label(frame, text="Progress: ")
-progress_label.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E))
+progress_label.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
 
 # Adjust column weights for resizing
 frame.columnconfigure(1, weight=1)
