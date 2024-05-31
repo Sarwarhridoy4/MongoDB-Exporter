@@ -1,127 +1,156 @@
 import os
 import json
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
+    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar
+)
+from PyQt5.QtGui import QFont, QPixmap, QIcon
+from PyQt5.QtCore import Qt
 from pymongo import MongoClient
 from bson.json_util import dumps
 
-def export_collections_to_json(uri, db_name, output_dir, progress_label):
-    try:
-        # Create the output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+class MongoDBExporter(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-        # Connect to MongoDB
-        client = MongoClient(uri)
-        db = client[db_name]
+        self.setWindowTitle("MongoDB Exporter")
+        self.setGeometry(100, 100, 600, 400)
 
-        # List all collections in the database
-        collections = db.list_collection_names()
-        total_collections = len(collections)
+        # Set window icon (favicon)
+        self.setWindowIcon(QIcon("./asset/favicon.png"))  # Provide the path to your favicon file
 
-        if total_collections == 0:
-            progress_label.config(text="No collections found in the database.")
-            return
+        # Main layout
+        main_layout = QVBoxLayout()
 
-        for index, collection_name in enumerate(collections):
-            collection = db[collection_name]
+        # Title and logo layout
+        title_layout = QHBoxLayout()
+        self.logo_label = QLabel(self)
+        pixmap = QPixmap("./asset/mongo_icon.png")  # Provide the path to your logo image
+        self.logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.title_label = QLabel("MongoDB Exporter", self)
+        self.title_label.setFont(QFont('Arial', 18, QFont.Bold))
 
-            # Check if the collection is empty
-            if collection.count_documents({}) > 0:
-                # Get the total number of documents in the collection
-                total_documents = collection.count_documents({})
-                processed_documents = 0
+        title_layout.addWidget(self.logo_label)
+        title_layout.addWidget(self.title_label, alignment=Qt.AlignVCenter)
+        main_layout.addLayout(title_layout)
 
-                # Calculate the percentage completed
-                percentage = ((index + 1) / total_collections) * 100
-                progress_label.config(text=f"Exporting: {collection_name}.json ({percentage:.2f}%)")
-                progress_label.update_idletasks()
+        # URI
+        uri_layout = QHBoxLayout()
+        self.uri_label = QLabel("MongoDB URI:", self)
+        self.uri_label.setFont(QFont('Arial', 12))
+        self.uri_input = QLineEdit(self)
+        self.uri_input.setFont(QFont('Arial', 12))
+        uri_layout.addWidget(self.uri_label)
+        uri_layout.addWidget(self.uri_input)
+        main_layout.addLayout(uri_layout)
 
-                # Export collection to JSON
-                with open(os.path.join(output_dir, f"{collection_name}.json"), "w") as file:
-                    cursor = collection.find()
-                    for document in cursor:
-                        file.write(dumps(document, indent=4) + "\n")
-                        processed_documents += 1
-                        document_percentage = (processed_documents / total_documents) * 100
-                        progress_label.config(text=f"Exporting: {collection_name}.json ({percentage:.2f}%) - {processed_documents}/{total_documents} documents ({document_percentage:.2f}%)")
-                        progress_label.update_idletasks()
+        # Database Name
+        db_name_layout = QHBoxLayout()
+        self.db_name_label = QLabel("Database Name:", self)
+        self.db_name_label.setFont(QFont('Arial', 12))
+        self.db_name_input = QLineEdit(self)
+        self.db_name_input.setFont(QFont('Arial', 12))
+        db_name_layout.addWidget(self.db_name_label)
+        db_name_layout.addWidget(self.db_name_input)
+        main_layout.addLayout(db_name_layout)
 
-        # Close the connection
-        client.close()
-        progress_label.config(text="Export completed successfully!")
-        messagebox.showinfo("Success", "Export completed successfully!")
-    except Exception as e:
-        progress_label.config(text="Error occurred!")
-        messagebox.showerror("Error", f"An error occurred: {e}")
+        # Output Directory
+        output_dir_layout = QHBoxLayout()
+        self.output_dir_label = QLabel("Output Directory:", self)
+        self.output_dir_label.setFont(QFont('Arial', 12))
+        self.output_dir_input = QLineEdit(self)
+        self.output_dir_input.setFont(QFont('Arial', 12))
+        self.browse_button = QPushButton("Browse", self)
+        self.browse_button.setFont(QFont('Arial', 12))
+        self.browse_button.clicked.connect(self.browse_output_dir)
+        output_dir_layout.addWidget(self.output_dir_label)
+        output_dir_layout.addWidget(self.output_dir_input)
+        output_dir_layout.addWidget(self.browse_button)
+        main_layout.addLayout(output_dir_layout)
 
-def browse_output_dir():
-    directory = filedialog.askdirectory()
-    if directory:
-        output_dir_entry.delete(0, tk.END)
-        output_dir_entry.insert(0, directory)
+        # Export Button
+        self.export_button = QPushButton("Export", self)
+        self.export_button.setFont(QFont('Arial', 12))
+        self.export_button.clicked.connect(self.start_export)
+        main_layout.addWidget(self.export_button, alignment=Qt.AlignCenter)
 
-def start_export():
-    uri = uri_entry.get()
-    db_name = db_name_entry.get()
-    output_dir = output_dir_entry.get()
+        # Progress Label and Bar
+        self.progress_label = QLabel("Progress: ", self)
+        self.progress_label.setFont(QFont('Arial', 12))
+        self.progress_bar = QProgressBar(self)
+        main_layout.addWidget(self.progress_label)
+        main_layout.addWidget(self.progress_bar)
 
-    if not uri or not db_name or not output_dir:
-        messagebox.showerror("Error", "All fields are required!")
-    else:
-        export_collections_to_json(uri, db_name, output_dir, progress_label)
+        # Set central widget
+        container = QWidget()
+        container.setLayout(main_layout)
+        self.setCentralWidget(container)
 
-# GUI setup
-root = tk.Tk()
-root.title("MongoDB Exporter")
-root.geometry("500x500")
+        # Add margins and spacing
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(10)
 
-# Apply a modern theme
-style = ttk.Style()
-style.theme_use('clam')
+    def browse_output_dir(self):
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+        if directory:
+            self.output_dir_input.setText(directory)
 
-# Customize styles
-style.configure('TLabel', font=('Helvetica', 12))
-style.configure('TEntry', font=('Helvetica', 12))
-style.configure('TButton', font=('Helvetica', 12), padding=5)
-style.configure('TFrame', padding=10)
+    def start_export(self):
+        uri = self.uri_input.text()
+        db_name = self.db_name_input.text()
+        output_dir = self.output_dir_input.text()
 
-frame = ttk.Frame(root)
-frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=10)
+        if not uri or not db_name or not output_dir:
+            QMessageBox.critical(self, "Error", "All fields are required!")
+        else:
+            self.export_collections_to_json(uri, db_name, output_dir)
 
-# URI
-ttk.Label(frame, text="MongoDB URI:").grid(row=0, column=0, sticky=tk.W, pady=5)
-uri_entry = ttk.Entry(frame, width=50)
-uri_entry.grid(row=0, column=1, sticky=(tk.W, tk.E))
+    def export_collections_to_json(self, uri, db_name, output_dir):
+        try:
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-# Database Name
-ttk.Label(frame, text="Database Name:").grid(row=1, column=0, sticky=tk.W, pady=5)
-db_name_entry = ttk.Entry(frame, width=50)
-db_name_entry.grid(row=1, column=1, sticky=(tk.W, tk.E))
+            client = MongoClient(uri)
+            db = client[db_name]
+            collections = db.list_collection_names()
+            total_collections = len(collections)
 
-# Output Directory
-ttk.Label(frame, text="Output Directory:").grid(row=2, column=0, sticky=tk.W, pady=5)
-output_dir_entry = ttk.Entry(frame, width=50)
-output_dir_entry.grid(row=2, column=1, sticky=(tk.W, tk.E))
+            if total_collections == 0:
+                self.progress_label.setText("No collections found in the database.")
+                return
 
-# Buttons Frame
-buttons_frame = ttk.Frame(frame)
-buttons_frame.grid(row=3, column=1, sticky=tk.E, pady=10)
+            for index, collection_name in enumerate(collections):
+                collection = db[collection_name]
+                if collection.count_documents({}) > 0:
+                    total_documents = collection.count_documents({})
+                    processed_documents = 0
 
-# Browse Button
-browse_button = ttk.Button(buttons_frame, text="Browse", command=browse_output_dir)
-browse_button.grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
+                    percentage = ((index + 1) / total_collections) * 100
+                    self.progress_label.setText(f"Exporting: {collection_name}.json ({percentage:.2f}%)")
+                    self.progress_bar.setValue(int(percentage))
 
-# Export Button
-export_button = ttk.Button(buttons_frame, text="Export", command=start_export)
-export_button.grid(row=0, column=1, sticky=tk.W)
+                    with open(os.path.join(output_dir, f"{collection_name}.json"), "w") as file:
+                        cursor = collection.find()
+                        for document in cursor:
+                            file.write(dumps(document, indent=4) + "\n")
+                            processed_documents += 1
+                            document_percentage = (processed_documents / total_documents) * 100
+                            self.progress_label.setText(f"Exporting: {collection_name}.json ({percentage:.2f}%) - {processed_documents}/{total_documents} documents ({document_percentage:.2f}%)")
+                            QApplication.processEvents()
 
-# Progress Label
-progress_label = ttk.Label(frame, text="Progress: ")
-progress_label.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10)
+            client.close()
+            self.progress_label.setText("Export completed successfully!")
+            QMessageBox.information(self, "Success", "Export completed successfully!")
+        except Exception as e:
+            self.progress_label.setText("Error occurred!")
+            QMessageBox.critical(self, "Error", f"An error occurred: {e}")
 
-# Adjust column weights for resizing
-frame.columnconfigure(1, weight=1)
+def main():
+    app = QApplication(sys.argv)
+    window = MongoDBExporter()
+    window.show()
+    sys.exit(app.exec_())
 
-# Run the GUI event loop
-root.mainloop()
+if __name__ == "__main__":
+    main()
