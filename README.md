@@ -6,24 +6,26 @@ MongoDB Exporter GUI is a Python-based application that provides a simple graphi
 
 ## Features
 
-- **Graphical User Interface**: Easy-to-use interface built with `tkinter`.
+- **Graphical User Interface**: Easy-to-use interface built with `PyQt5`.
 - **MongoDB Connection**: Connect to any MongoDB database using a URI.
 - **Database Selection**: Specify the database you want to export collections from.
 - **Output Directory**: Choose the directory where JSON files will be saved.
 - **Export Non-Empty Collections**: Only exports collections that contain documents.
 - **Real-Time Progress Updates**: Displays the current collection being exported and the percentage of completion.
 - **Error Handling**: Provides error messages if the export process fails.
+- **Logo and Favicon**: Displays a logo in the application and a favicon in the title bar and taskbar.
 
 ## Prerequisites
 
 - Python 3.x
 - `pymongo` library
-- `tkinter` library (included with standard Python distribution)
+- `PyQt5` library
 
 ## Installation
 
 1. Clone the repository or download the script.
-2. Install the required `pymongo` library if not already installed:
+2. Install the required libraries if not already installed:
 
 ```sh
-pip install pymongo
+pip install pymongo pyqt5
+```
