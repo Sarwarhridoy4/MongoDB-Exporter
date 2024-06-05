@@ -10,19 +10,17 @@ from PyQt5.QtCore import Qt
 from pymongo import MongoClient
 from bson.json_util import dumps
 
-# # https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
+# https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS2
+        base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-
-
 
 
 class MongoDBExporter(QMainWindow):
@@ -130,6 +128,7 @@ class MongoDBExporter(QMainWindow):
             db = client[db_name]
             collections = db.list_collection_names()
             total_collections = len(collections)
+            processed_collections = 0
 
             if total_collections == 0:
                 self.progress_label.setText("No collections found in the database.")
@@ -137,22 +136,24 @@ class MongoDBExporter(QMainWindow):
 
             for index, collection_name in enumerate(collections):
                 collection = db[collection_name]
-                if collection.count_documents({}) > 0:
-                    total_documents = collection.count_documents({})
+                total_documents = collection.count_documents({})
+
+                if total_documents > 0:
                     processed_documents = 0
 
-                    percentage = ((index + 1) / total_collections) * 100
-                    self.progress_label.setText(f"Exporting: {collection_name}.json ({percentage:.2f}%)")
-                    self.progress_bar.setValue(int(percentage))
-
-                    with open(os.path.join(output_dir, f"{collection_name}.json"), "w") as file:
-                        cursor = collection.find()
-                        for document in cursor:
+                    for document in collection.find():
+                        with open(os.path.join(output_dir, f"{db_name}_{collection_name}.json"), "a") as file:
                             file.write(dumps(document, indent=4) + "\n")
                             processed_documents += 1
+
+                            # Update document progress
                             document_percentage = (processed_documents / total_documents) * 100
-                            self.progress_label.setText(f"Exporting: {collection_name}.json ({percentage:.2f}%) - {processed_documents}/{total_documents} documents ({document_percentage:.2f}%)")
+                            overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
+                            self.progress_label.setText(f"Exporting: {collection_name}.json ({processed_documents}/{total_documents} documents) - Overall {overall_percentage:.2f}%")
+                            self.progress_bar.setValue(int(overall_percentage))
                             QApplication.processEvents()
+
+                processed_collections += 1
 
             client.close()
             self.progress_label.setText("Export completed successfully!")
@@ -169,3 +170,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
