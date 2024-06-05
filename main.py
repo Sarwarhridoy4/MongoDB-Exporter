@@ -3,10 +3,10 @@ import json
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar
+    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QDialog, QDialogButtonBox
 )
 from PyQt5.QtGui import QFont, QPixmap, QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from pymongo import MongoClient
 from bson.json_util import dumps
 
@@ -21,6 +21,69 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+
+class ExportThread(QThread):
+    update_progress = pyqtSignal(int, str, int, int, float)
+    finished = pyqtSignal(str)
+    error_occurred = pyqtSignal(str)
+
+    def __init__(self, uri, db_name, output_dir):
+        super().__init__()
+        self.uri = uri
+        self.db_name = db_name
+        self.output_dir = output_dir
+        self.abort_flag = False
+
+    def run(self):
+        try:
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+
+            client = MongoClient(self.uri)
+            db = client[self.db_name]
+            collections = db.list_collection_names()
+            total_collections = len(collections)
+            processed_collections = 0
+
+            if total_collections == 0:
+                self.finished.emit("No collections found in the database.")
+                return
+
+            for collection_name in collections:
+                if self.abort_flag:
+                    self.finished.emit("Export aborted by user.")
+                    return
+
+                collection = db[collection_name]
+                total_documents = collection.count_documents({})
+
+                if total_documents > 0:
+                    processed_documents = 0
+
+                    for document in collection.find():
+                        if self.abort_flag:
+                            self.finished.emit("Export aborted by user.")
+                            return
+
+                        with open(os.path.join(self.output_dir, f"{self.db_name}_{collection_name}.json"), "a") as file:
+                            file.write(dumps(document, indent=4) + "\n")
+                            processed_documents += 1
+
+                            # Update document progress
+                            document_percentage = (processed_documents / total_documents) * 100
+                            overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
+                            self.update_progress.emit(int(overall_percentage), collection_name, processed_documents, total_documents, document_percentage)
+
+                processed_collections += 1
+
+            client.close()
+            self.finished.emit("Export completed successfully!")
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def abort(self):
+        self.abort_flag = True
 
 
 class MongoDBExporter(QMainWindow):
@@ -85,8 +148,16 @@ class MongoDBExporter(QMainWindow):
         # Export Button
         self.export_button = QPushButton("Export", self)
         self.export_button.setFont(QFont('Arial', 12))
-        self.export_button.clicked.connect(self.start_export)
+        self.export_button.clicked.connect(self.confirm_start_export)
         main_layout.addWidget(self.export_button, alignment=Qt.AlignCenter)
+
+        # Abort Button
+        self.abort_button = QPushButton("Abort", self)
+        self.abort_button.setFont(QFont('Arial', 12))
+        self.abort_button.setStyleSheet("background-color: red; color: white;")
+        self.abort_button.clicked.connect(self.abort_export)
+        self.abort_button.setDisabled(True)
+        main_layout.addWidget(self.abort_button, alignment=Qt.AlignCenter)
 
         # Progress Label and Bar
         self.progress_label = QLabel("Progress: ", self)
@@ -104,10 +175,20 @@ class MongoDBExporter(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(10)
 
+        self.export_thread = None
+
     def browse_output_dir(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.output_dir_input.setText(directory)
+
+    def confirm_start_export(self):
+        reply = QMessageBox.question(
+            self, 'Confirm Export', 'Are you sure you want to start the export?',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.start_export()
 
     def start_export(self):
         uri = self.uri_input.text()
@@ -117,50 +198,37 @@ class MongoDBExporter(QMainWindow):
         if not uri or not db_name or not output_dir:
             QMessageBox.critical(self, "Error", "All fields are required!")
         else:
-            self.export_collections_to_json(uri, db_name, output_dir)
+            self.export_button.setDisabled(True)
+            self.abort_button.setDisabled(False)
+            self.export_thread = ExportThread(uri, db_name, output_dir)
+            self.export_thread.update_progress.connect(self.update_progress)
+            self.export_thread.finished.connect(self.export_finished)
+            self.export_thread.error_occurred.connect(self.export_error)
+            self.export_thread.start()
 
-    def export_collections_to_json(self, uri, db_name, output_dir):
-        try:
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+    def update_progress(self, overall_percentage, collection_name, processed_documents, total_documents, document_percentage):
+        self.progress_label.setText(
+            f"Exporting: {collection_name}.json ({processed_documents}/{total_documents} documents) - Overall {overall_percentage:.2f}%")
+        self.progress_bar.setValue(int(overall_percentage))
+        QApplication.processEvents()
 
-            client = MongoClient(uri)
-            db = client[db_name]
-            collections = db.list_collection_names()
-            total_collections = len(collections)
-            processed_collections = 0
+    def export_finished(self, message):
+        self.progress_label.setText(message)
+        self.export_button.setDisabled(False)
+        self.abort_button.setDisabled(True)
+        QMessageBox.information(self, "Success", message)
 
-            if total_collections == 0:
-                self.progress_label.setText("No collections found in the database.")
-                return
+    def export_error(self, message):
+        self.progress_label.setText("Error occurred!")
+        self.export_button.setDisabled(False)
+        self.abort_button.setDisabled(True)
+        QMessageBox.critical(self, "Error", f"An error occurred: {message}")
 
-            for index, collection_name in enumerate(collections):
-                collection = db[collection_name]
-                total_documents = collection.count_documents({})
-
-                if total_documents > 0:
-                    processed_documents = 0
-
-                    for document in collection.find():
-                        with open(os.path.join(output_dir, f"{db_name}_{collection_name}.json"), "a") as file:
-                            file.write(dumps(document, indent=4) + "\n")
-                            processed_documents += 1
-
-                            # Update document progress
-                            document_percentage = (processed_documents / total_documents) * 100
-                            overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
-                            self.progress_label.setText(f"Exporting: {collection_name}.json ({processed_documents}/{total_documents} documents) - Overall {overall_percentage:.2f}%")
-                            self.progress_bar.setValue(int(overall_percentage))
-                            QApplication.processEvents()
-
-                processed_collections += 1
-
-            client.close()
-            self.progress_label.setText("Export completed successfully!")
-            QMessageBox.information(self, "Success", "Export completed successfully!")
-        except Exception as e:
-            self.progress_label.setText("Error occurred!")
-            QMessageBox.critical(self, "Error", f"An error occurred: {e}")
+    def abort_export(self):
+        if self.export_thread:
+            self.export_thread.abort()
+            self.abort_button.setDisabled(True)
+            self.progress_label.setText("Aborting export...")
 
 def main():
     app = QApplication(sys.argv)
@@ -170,4 +238,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
