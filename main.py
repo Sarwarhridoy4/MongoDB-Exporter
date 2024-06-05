@@ -12,14 +12,14 @@ from bson.json_util import dumps
 
 # https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
 
+# Get the absolute path to the resource, works for dev and for PyInstaller
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
+    except AttributeError:
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
 
