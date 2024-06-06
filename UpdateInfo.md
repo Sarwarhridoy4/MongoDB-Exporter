@@ -19,3 +19,4 @@
 
 4. **Fix Real-time Percentage**:
    - The real-time percentage progress display has been fixed to show accurate progress during the export process.
+   - Fix the Crashing app while exporting large collections
