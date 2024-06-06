@@ -1,6 +1,6 @@
 # Key Changes:
 
-## Version 2.0
+## Version 2.0.1
 
 1. **Confirmation Dialog**:
 
