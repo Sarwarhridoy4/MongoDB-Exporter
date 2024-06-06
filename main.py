@@ -46,6 +46,11 @@ class ExportThread(QThread):
         self.db_name = db_name
         self.output_dir = output_dir
         self.abort_flag = False
+        self.lock = threading.Lock()
+        self.total_collections = 0
+        self.processed_collections = 0
+        self.total_documents = {}
+        self.processed_documents = {}
 
     def run(self):
         try:
@@ -55,53 +60,81 @@ class ExportThread(QThread):
             client = MongoClient(self.uri)
             db = client[self.db_name]
             collections = db.list_collection_names()
-            total_collections = len(collections)
-            processed_collections = 0
+            self.total_collections = len(collections)
 
-            if total_collections == 0:
+            if self.total_collections == 0:
                 self.finished.emit("No collections found in the database.")
                 return
 
+            # Use a thread pool to process collections in parallel
+            threads = []
             for collection_name in collections:
                 if self.abort_flag:
                     self.finished.emit("Export aborted by user.")
                     return
 
-                collection = db[collection_name]
-                total_documents = collection.count_documents({})
+                thread = threading.Thread(target=self.process_collection, args=(db, collection_name))
+                threads.append(thread)
+                thread.start()
 
-                if total_documents > 0:
-                    processed_documents = 0
-
-                    # Process documents in batches
-                    batch_size = 100
-                    cursor = collection.find().batch_size(batch_size)
-
-                    with open(os.path.join(self.output_dir, f"{self.db_name}_{collection_name}.json"), "w") as file:
-                        for document in cursor:
-                            if self.abort_flag:
-                                self.finished.emit("Export aborted by user.")
-                                return
-
-                            file.write(dumps(document, indent=4) + "\n")
-                            processed_documents += 1
-
-                            # Update document progress
-                            if processed_documents % batch_size == 0 or processed_documents == total_documents:
-                                document_percentage = (processed_documents / total_documents) * 100
-                                overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
-                                self.update_progress.emit(int(overall_percentage), collection_name, processed_documents, total_documents, document_percentage)
-
-                processed_collections += 1
+            for thread in threads:
+                thread.join()
 
             client.close()
             self.finished.emit("Export completed successfully!")
         except Exception as e:
             self.error_occurred.emit(str(e))
 
+    def process_collection(self, db, collection_name):
+        try:
+            collection = db[collection_name]
+            total_documents = collection.count_documents({})
+            self.lock.acquire()
+            self.total_documents[collection_name] = total_documents
+            self.processed_documents[collection_name] = 0
+            self.lock.release()
+
+            if total_documents > 0:
+                processed_documents = 0
+
+                # Increased batch size
+                batch_size = 10000
+                cursor = collection.find().batch_size(batch_size)
+
+                with open(os.path.join(self.output_dir, f"{self.db_name}_{collection_name}.json"), "w") as file:
+                    for document in cursor:
+                        if self.abort_flag:
+                            self.finished.emit("Export aborted by user.")
+                            return
+
+                        file.write(dumps(document, indent=4) + "\n")
+                        processed_documents += 1
+
+                        self.lock.acquire()
+                        self.processed_documents[collection_name] = processed_documents
+                        document_percentage = (processed_documents / total_documents) * 100
+                        overall_percentage = self.calculate_overall_percentage()
+                        self.lock.release()
+
+                        # Update document progress
+                        if processed_documents % batch_size == 0 or processed_documents == total_documents:
+                            self.update_progress.emit(int(overall_percentage), collection_name, processed_documents, total_documents, document_percentage)
+
+            self.lock.acquire()
+            self.processed_collections += 1
+            self.lock.release()
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+
+    def calculate_overall_percentage(self):
+        total_documents = sum(self.total_documents.values())
+        processed_documents = sum(self.processed_documents.values())
+        if total_documents == 0:
+            return 0
+        return (processed_documents / total_documents) * 100
+
     def abort(self):
         self.abort_flag = True
-
 
 class MongoDBExporter(QMainWindow):
     def __init__(self):
