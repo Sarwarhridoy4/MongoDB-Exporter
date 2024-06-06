@@ -41,5 +41,3 @@ exe = EXE(
     entitlements_file=None,
     icon=['icon.ico'],
 )
-
-
