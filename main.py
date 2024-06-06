@@ -1,6 +1,8 @@
 import os
 import json
 import sys
+import threading
+
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
     QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QDialog, QDialogButtonBox
@@ -22,6 +24,16 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
+
+# Increase the recursion limit
+sys.setrecursionlimit(10000)
+
+# Try setting the stack size, handle ValueError
+try:
+    threading.stack_size(200*1024*1024)  # Start with 200 MB and adjust if necessary
+except ValueError as e:
+    print(f"Failed to set thread stack size: {e}")
+    print("Using default stack size")
 
 class ExportThread(QThread):
     update_progress = pyqtSignal(int, str, int, int, float)
@@ -61,19 +73,24 @@ class ExportThread(QThread):
                 if total_documents > 0:
                     processed_documents = 0
 
-                    for document in collection.find():
-                        if self.abort_flag:
-                            self.finished.emit("Export aborted by user.")
-                            return
+                    # Process documents in batches
+                    batch_size = 100
+                    cursor = collection.find().batch_size(batch_size)
 
-                        with open(os.path.join(self.output_dir, f"{self.db_name}_{collection_name}.json"), "a") as file:
+                    with open(os.path.join(self.output_dir, f"{self.db_name}_{collection_name}.json"), "w") as file:
+                        for document in cursor:
+                            if self.abort_flag:
+                                self.finished.emit("Export aborted by user.")
+                                return
+
                             file.write(dumps(document, indent=4) + "\n")
                             processed_documents += 1
 
                             # Update document progress
-                            document_percentage = (processed_documents / total_documents) * 100
-                            overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
-                            self.update_progress.emit(int(overall_percentage), collection_name, processed_documents, total_documents, document_percentage)
+                            if processed_documents % batch_size == 0 or processed_documents == total_documents:
+                                document_percentage = (processed_documents / total_documents) * 100
+                                overall_percentage = ((processed_collections + (processed_documents / total_documents)) / total_collections) * 100
+                                self.update_progress.emit(int(overall_percentage), collection_name, processed_documents, total_documents, document_percentage)
 
                 processed_collections += 1
 
