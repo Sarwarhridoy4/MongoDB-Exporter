@@ -34,6 +34,6 @@ pip install pymongo pyqt5
 
 Welcome to MongoDB Exporter! Click the button below to download the latest version.
 
-<a href="https://example.com/myfile.zip" download>
+<a href="https://github.com/Sarwarhridoy4/MongoDB-Exporter/blob/production/application/MongoDB%20Exporter.exe" download>
     <img src="https://img.shields.io/badge/Download-Now-brightgreen" alt="Download Now">
 </a>
