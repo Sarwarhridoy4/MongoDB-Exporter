@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Import_from_MongoDB.iml" filepath="$PROJECT_DIR$/.idea/Import_from_MongoDB.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/MongoDB-Exporter.iml" filepath="$PROJECT_DIR$/.idea/MongoDB-Exporter.iml" />
     </modules>
   </component>
 </project>

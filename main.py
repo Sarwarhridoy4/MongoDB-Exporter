@@ -3,18 +3,17 @@ import sys
 import threading
 import zipfile
 import datetime
+import json
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect
+    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QAction
 )
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from pymongo import MongoClient
 from bson.json_util import dumps
 
-
-# https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
 
 # Get the absolute path to the resource, works for dev and for PyInstaller
 def resource_path(relative_path):
@@ -94,7 +93,7 @@ class ExportThread(QThread):
 
             # Zip the folder
             zip_file_path = self.zip_output_folder()
-            self.finished.emit(f"Export completed successfully! Zipped at: {zip_file_path}")
+            self.finished.emit(f"Export completed successfully! \n Zipped at: {zip_file_path}")
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -273,6 +272,56 @@ class MongoDBExporter(QMainWindow):
         main_layout.setSpacing(25)
 
         self.export_thread = None
+
+        # Create the menu bar
+        self.create_menu_bar()
+
+    def create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        # Create the 'File' menu
+        file_menu = menu_bar.addMenu('File')
+
+        # Create 'Create Backup Script' action
+        create_backup_action = QAction('Create Backup Script', self)
+        create_backup_action.triggered.connect(self.create_backup_script)
+        file_menu.addAction(create_backup_action)
+
+        # Create 'Load Backup Script' action
+        load_backup_action = QAction('Load Backup Script', self)
+        load_backup_action.triggered.connect(self.load_backup_script)
+        file_menu.addAction(load_backup_action)
+
+    def create_backup_script(self):
+        backup_data = {
+            'uri': self.uri_input.text(),
+            'db_name': self.db_name_input.text(),
+            'output_dir': self.output_dir_input.text()
+        }
+
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save Backup Script", "", "JSON Files (*.json);;All Files (*)", options=options)
+        if file_name:
+            with open(file_name, 'w') as file:
+                json.dump(backup_data, file)
+            QMessageBox.information(self, "Success", "Backup script created successfully!")
+
+    def load_backup_script(self):
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load Backup Script", "", "JSON Files (*.json);;All Files (*)", options=options)
+        if file_name:
+            with open(file_name, 'r') as file:
+                backup_data = json.load(file)
+                self.uri_input.setText(backup_data['uri'])
+                self.db_name_input.setText(backup_data['db_name'])
+                self.output_dir_input.setText(backup_data['output_dir'])
+
+            reply = QMessageBox.question(
+                self, 'Start Export', 'Do you want to start the export now?',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.start_export()
 
     def browse_output_dir(self):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")

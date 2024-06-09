@@ -42,4 +42,20 @@
 
 2. **Add Zipping Feature**:
 
-   - Add Zipping after successful export. It will help to reduce size if needs to upload or sen to anyone.
+   - Add Zipping after successful export. It will help to reduce size if you needs to upload or sen to anyone.
+   
+
+
+## Version 2.2.0
+
+1. **Export / Import Script added**:
+
+   - Add option to create and load json script.
+   - Fill info once ==> click file menu ==> click create script ==> Give name ==> Save
+   - Create script once and load it to start export automatically.
+   - It will save backup file to your selected location every time.
+   - Once You loaded a file it will ask you to start export automatically.
+   - If you select yes it will start and save backup and zipped folder on your desire location.
+   - If no it does not start immediately but leave input populated with your script information.
+   - 
+
