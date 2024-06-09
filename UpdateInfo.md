@@ -31,3 +31,15 @@
 2. **WaterMark Logo**:
 
    - Add Background Image Watermark Logo
+   
+
+
+## Version 2.1.0
+
+1. **Add Dated Folder**:
+
+   - Add a Dated Folder inside output Folder 
+
+2. **Add Zipping Feature**:
+
+   - Add Zipping after successful export. It will help to reduce size if needs to upload or sen to anyone.
