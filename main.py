@@ -1,6 +1,8 @@
 import os
 import sys
 import threading
+import zipfile
+import datetime
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
@@ -38,6 +40,7 @@ except ValueError as e:
 
 class ExportThread(QThread):
     update_progress = pyqtSignal(int, str, int, int, float)
+    update_zip_progress = pyqtSignal(int, str)
     finished = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
 
@@ -55,6 +58,12 @@ class ExportThread(QThread):
 
     def run(self):
         try:
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+
+            date_str = datetime.datetime.now().strftime("%d-%m-%Y")
+            self.output_dir = os.path.join(self.output_dir, date_str)
+
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
 
@@ -82,7 +91,10 @@ class ExportThread(QThread):
                 thread.join()
 
             client.close()
-            self.finished.emit("Export completed successfully!")
+
+            # Zip the folder
+            zip_file_path = self.zip_output_folder()
+            self.finished.emit(f"Export completed successfully! Zipped at: {zip_file_path}")
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -134,6 +146,23 @@ class ExportThread(QThread):
         if total_documents == 0:
             return 0
         return (processed_documents / total_documents) * 100
+
+    def zip_output_folder(self):
+        zip_file_path = f"{self.output_dir}.zip"
+        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(self.output_dir):
+                for file in files:
+                    if self.abort_flag:
+                        self.finished.emit("Export aborted by user.")
+                        return
+
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, os.path.relpath(file_path, self.output_dir))
+                    files_processed = zipf.infolist()
+                    zip_progress = (len(files_processed) / len(files)) * 100
+                    self.update_zip_progress.emit(int(zip_progress), file)
+
+        return zip_file_path
 
     def abort(self):
         self.abort_flag = True
@@ -270,6 +299,7 @@ class MongoDBExporter(QMainWindow):
             self.abort_button.setDisabled(False)
             self.export_thread = ExportThread(uri, db_name, output_dir)
             self.export_thread.update_progress.connect(self.update_progress)
+            self.export_thread.update_zip_progress.connect(self.update_zip_progress)
             self.export_thread.finished.connect(self.export_finished)
             self.export_thread.error_occurred.connect(self.export_error)
             self.export_thread.start()
@@ -279,6 +309,12 @@ class MongoDBExporter(QMainWindow):
         self.progress_label.setText(
             f"Exporting: {collection_name}.json ({processed_documents}/{total_documents} documents) - Overall {overall_percentage:.2f}%")
         self.progress_bar.setValue(int(overall_percentage))
+        QApplication.processEvents()
+
+    def update_zip_progress(self, zip_progress, file_name):
+        self.progress_label.setText(
+            f"Zipping: {file_name} - Overall {zip_progress:.2f}%")
+        self.progress_bar.setValue(zip_progress)
         QApplication.processEvents()
 
     def export_finished(self, message):
