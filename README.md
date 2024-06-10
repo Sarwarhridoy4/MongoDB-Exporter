@@ -30,6 +30,71 @@ MongoDB Exporter GUI is a Python-based application with a simple graphical user 
 pip install pymongo pyqt5
 ```
 
+
+
+
+# Key Changes:
+
+## Version 2.0.1
+
+1. **Confirmation Dialog**:
+
+   - A confirmation dialog (`QMessageBox.question`) is shown when the export button is clicked, asking the user to confirm if they want to start the export process.
+
+2. **Abort Button**:
+
+   - An "Abort" button has been added to the interface. This button is styled with a red background and white text.
+   - When clicked, it sets a flag to abort the export process.
+
+3. **Disable/Enable Buttons**:
+
+   - The export and abort buttons are enabled and disabled appropriately during the export process.
+   - The export button is disabled while the export is in progress.
+   - The abort button is disabled when the export is not in progress or after the abort is triggered.
+
+4. **Fix Real-time Percentage**:
+   - The real-time percentage progress display has been fixed to show accurate progress during the export process.
+   - Fix the Crashing app while exporting large collections
+
+
+## Version 2.0.2
+
+1. **Change Font**:
+
+   - Change font from Arial to Roboto
+
+2. **WaterMark Logo**:
+
+   - Add Background Image Watermark Logo
+   
+
+
+## Version 2.1.0
+
+1. **Add Dated Folder**:
+
+   - Add a Dated Folder inside the output Folder 
+
+2. **Add Zipping Feature**:
+
+   - Add Zipping after successful export. It will help to reduce size if you need to upload or send to anyone.
+   
+
+
+## Version 2.2.0
+
+1. **Export / Import Script added**:
+
+   - Add an option to create and load JSON script.
+   - Fill info once ==> click file menu ==> click create script ==> Give name ==> Save
+   - Create a script once and load it to start exporting automatically.
+   - It will save a backup file to your selected location every time.
+   - Once You load a file it will ask you to start export automatically.
+   - If you select yes it will start and save the backup and zipped folder on your desired location.
+   - If no it does not start immediately but leave input populated with your script information.
+
+
+
 # Get Installer(Windows)
 
 Welcome to MongoDB Exporter! Click the button below to download the latest version.
