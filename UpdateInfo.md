@@ -43,7 +43,7 @@
 2. **Add Zipping Feature**:
 
    - Add Zipping after successful export. It will help to reduce size if you needs to upload or sen to anyone.
-   
+
 
 
 ## Version 2.2.0
@@ -57,5 +57,10 @@
    - Once You loaded a file it will ask you to start export automatically.
    - If you select yes it will start and save backup and zipped folder on your desire location.
    - If no it does not start immediately but leave input populated with your script information.
-   - 
+
+
+## Version 2.2.1
+
+1. Add new file extension .mdbexport
+2. Make code modular
 

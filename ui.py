@@ -145,7 +145,7 @@ class MongoDBExporter(QMainWindow):
         }
 
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save Backup Script", "", "JSON Files (*.json);;All Files (*)",
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save Backup Script", "", "JSON Files (*.mdbexport);;All Files (*)",
                                                    options=options)
         if file_name:
             with open(file_name, 'w') as file:
@@ -154,7 +154,7 @@ class MongoDBExporter(QMainWindow):
 
     def load_backup_script(self):
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getOpenFileName(self, "Load Backup Script", "", "JSON Files (*.json);;All Files (*)",
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load Backup Script", "", "JSON Files (*.mdbexport);;All Files (*)",
                                                    options=options)
         if file_name:
             with open(file_name, 'r') as file:

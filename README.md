@@ -93,7 +93,10 @@ pip install pymongo pyqt5
    - If you select yes it will start and save the backup and zipped folder on your desired location.
    - If no it does not start immediately but leave input populated with your script information.
 
+## Version 2.2.1
 
+1. Add new file extension .mdbexport
+2. Make code modular
 
 # Get Installer(Windows)
 
