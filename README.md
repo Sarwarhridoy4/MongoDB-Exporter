@@ -73,11 +73,11 @@ pip install pymongo pyqt5
 
 1. **Add Dated Folder**:
 
-   - Add a Dated Folder inside the output Folder 
+   - Add a Dated Folder inside the Output Folder 
 
 2. **Add Zipping Feature**:
 
-   - Add Zipping after successful export. It will help to reduce size if you need to upload or send to anyone.
+   - Add Zipping after successful export. It will help reduce the size if you need to upload or send it to anyone.
    
 
 
@@ -102,6 +102,6 @@ pip install pymongo pyqt5
 
 Welcome to MongoDB Exporter! Click the button below to download the latest version.
 
-<a href="https://drive.google.com/uc?export=download&id=1Qyvni4RL_aOEpJWmFfE8k5acJO-O8rNP" download>
+<a href="https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/realease/MongoDB.Exporter.exe" download>
     <img src="https://img.shields.io/badge/Download-Now-brightgreen" alt="Download Now">
 </a>
