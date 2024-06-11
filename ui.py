@@ -2,13 +2,14 @@ import os
 import json
 from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QAction
+    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QAction, QDialog
 )
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
 
 from export_thread import ExportThread
+from updater import UpdateThread
 from utils import resource_path
 
 
@@ -229,3 +230,62 @@ class MongoDBExporter(QMainWindow):
             self.export_thread.abort()
             self.abort_button.setDisabled(True)
             self.progress_label.setText("Aborting export...")
+
+
+
+    def create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        # Create the 'File' menu
+        file_menu = menu_bar.addMenu('File')
+
+        # Create 'Create Backup Script' action
+        create_backup_action = QAction('Create Backup Script', self)
+        create_backup_action.triggered.connect(self.create_backup_script)
+        file_menu.addAction(create_backup_action)
+
+        # Create 'Load Backup Script' action
+        load_backup_action = QAction('Load Backup Script', self)
+        load_backup_action.triggered.connect(self.load_backup_script)
+        file_menu.addAction(load_backup_action)
+
+        # Add Check for Updates action
+        check_updates_action = QAction('Check for Updates', self)
+        check_updates_action.triggered.connect(self.check_for_updates)
+        file_menu.addAction(check_updates_action)
+
+    def check_for_updates(self):
+        current_version = "2.2.2"  # Replace with your current version
+        repo = "Sarwarhridoy4/MongoDB-Exporter"  # Replace with your GitHub repo
+
+        self.update_thread = UpdateThread(repo, current_version)
+        self.update_thread.update_progress.connect(self.show_update_progress)
+        self.update_thread.update_finished.connect(self.update_finished)
+        self.update_thread.update_error.connect(self.update_error)
+        self.update_thread.start()
+
+        self.update_dialog = QDialog(self)
+        self.update_dialog.setWindowTitle("Checking for Updates")
+        self.update_dialog.setGeometry(300, 300, 300, 150)
+        layout = QVBoxLayout()
+
+        self.update_label = QLabel("Checking for updates...", self.update_dialog)
+        self.update_progress_bar = QProgressBar(self.update_dialog)
+
+        layout.addWidget(self.update_label)
+        layout.addWidget(self.update_progress_bar)
+
+        self.update_dialog.setLayout(layout)
+        self.update_dialog.show()
+
+    def show_update_progress(self, value, speed):
+        self.update_progress_bar.setValue(value)
+        self.update_label.setText(f"Downloading update... {value}% - {speed}")
+
+    def update_finished(self, message):
+        self.update_dialog.close()
+        QMessageBox.information(self, "Update", message)
+
+    def update_error(self, message):
+        self.update_dialog.close()
+        QMessageBox.critical(self, "Update Error", message)

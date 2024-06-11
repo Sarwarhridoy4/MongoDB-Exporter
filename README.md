@@ -30,9 +30,6 @@ MongoDB Exporter GUI is a Python-based application with a simple graphical user 
 pip install pymongo pyqt5
 ```
 
-
-
-
 # Key Changes:
 
 ## Version 2.0.1
@@ -56,7 +53,6 @@ pip install pymongo pyqt5
    - The real-time percentage progress display has been fixed to show accurate progress during the export process.
    - Fix the Crashing app while exporting large collections
 
-
 ## Version 2.0.2
 
 1. **Change Font**:
@@ -66,20 +62,16 @@ pip install pymongo pyqt5
 2. **WaterMark Logo**:
 
    - Add Background Image Watermark Logo
-   
-
 
 ## Version 2.1.0
 
 1. **Add Dated Folder**:
 
-   - Add a Dated Folder inside the Output Folder 
+   - Add a Dated Folder inside the Output Folder
 
 2. **Add Zipping Feature**:
 
    - Add Zipping after successful export. It will help reduce the size if you need to upload or send it to anyone.
-   
-
 
 ## Version 2.2.0
 
@@ -97,6 +89,12 @@ pip install pymongo pyqt5
 
 1. Add new file extension .mdbexport
 2. Make code modular
+
+## Version 2.2.2
+
+1. Add new file extension .mdbexport
+2. Make code modular
+3. Add Check For Update Option
 
 # Get Installer(Windows)
 

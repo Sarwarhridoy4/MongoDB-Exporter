@@ -3,3 +3,4 @@
 *.spec
 *.iss
 *.idea
+*Output

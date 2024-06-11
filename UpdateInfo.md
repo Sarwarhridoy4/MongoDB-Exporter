@@ -21,7 +21,6 @@
    - The real-time percentage progress display has been fixed to show accurate progress during the export process.
    - Fix the Crashing app while exporting large collections
 
-
 ## Version 2.0.2
 
 1. **Change Font**:
@@ -31,20 +30,16 @@
 2. **WaterMark Logo**:
 
    - Add Background Image Watermark Logo
-   
-
 
 ## Version 2.1.0
 
 1. **Add Dated Folder**:
 
-   - Add a Dated Folder inside output Folder 
+   - Add a Dated Folder inside output Folder
 
 2. **Add Zipping Feature**:
 
    - Add Zipping after successful export. It will help to reduce size if you needs to upload or sen to anyone.
-
-
 
 ## Version 2.2.0
 
@@ -58,9 +53,13 @@
    - If you select yes it will start and save backup and zipped folder on your desire location.
    - If no it does not start immediately but leave input populated with your script information.
 
-
 ## Version 2.2.1
 
 1. Add new file extension .mdbexport
 2. Make code modular
 
+## Version 2.2.2
+
+1. Add new file extension .mdbexport
+2. Make code modular
+3. Add Check For Update Option
