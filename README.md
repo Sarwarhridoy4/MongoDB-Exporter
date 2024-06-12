@@ -27,7 +27,7 @@ MongoDB Exporter GUI is a Python-based application with a simple graphical user 
 2. Install the required libraries if not already installed:
 
 ```sh
-pip install pymongo pyqt5
+pip install pymongo pyqt5 requests
 ```
 
 # Key Changes:

@@ -1,5 +1,5 @@
-import os
 import json
+
 from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
     QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QAction, QDialog
@@ -13,11 +13,80 @@ from updater import UpdateThread
 from utils import resource_path
 
 
+class AboutDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("About MongoDB Exporter")
+        self.setFixedSize(400, 500)
+
+        layout = QVBoxLayout()
+
+        # Set window icon (favicon)
+        self.setWindowIcon(QIcon(resource_path("./asset/favicon.png")))  # Provide the path to your favicon file
+
+        # Logo
+        logo_label = QLabel(self)
+        pixmap = QPixmap(resource_path("./asset/mongo_icon.png"))
+        logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        logo_label.setAlignment(Qt.AlignCenter)
+
+        # Application name and version
+        app_name_label = QLabel("MongoDB Exporter", self)
+        app_name_label.setFont(QFont('Roboto', 18, QFont.Bold))
+        app_name_label.setAlignment(Qt.AlignCenter)
+
+        version_label = QLabel("Version 2.3.0", self)
+        version_label.setFont(QFont('Roboto', 12))
+        version_label.setAlignment(Qt.AlignCenter)
+
+        # Developer image
+        dev_image_label = QLabel(self)
+        dev_image_pixmap = QPixmap(resource_path("./asset/developer_image.png"))  # Provide the path to your developer image
+        dev_image_label.setPixmap(dev_image_pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        dev_image_label.setAlignment(Qt.AlignCenter)
+        dev_image_label.mousePressEvent = self.open_developer_website  # Connect the click event
+
+        # Author information
+        author_label = QLabel("Sarwar Hossain Hridoy", self)
+        author_label.setFont(QFont('Roboto', 12))
+        author_label.setAlignment(Qt.AlignCenter)
+
+        # Email
+        email_label = QLabel("Email: sarwarhridoy4@gmail.com", self)
+        email_label.setFont(QFont('Roboto', 10))
+        email_label.setAlignment(Qt.AlignCenter)
+
+        # GitHub link with logo
+        github_label = QLabel(self)
+        github_pixmap = QPixmap(resource_path("./asset/github_icon.png"))  # Provide the path to your GitHub logo image
+        github_label.setPixmap(github_pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        github_label.setAlignment(Qt.AlignCenter)
+        github_label.mousePressEvent = self.open_github_link  # Connect the click event
+
+        layout.addWidget(logo_label)
+        layout.addWidget(app_name_label)
+        layout.addWidget(version_label)
+        layout.addWidget(dev_image_label)
+        layout.addWidget(author_label)
+        layout.addWidget(email_label)
+        layout.addWidget(github_label)
+
+        self.setLayout(layout)
+
+    def open_developer_website(self, event):
+        import webbrowser
+        webbrowser.open("https://sarwar-hossain-hridoy.web.app/")
+
+    def open_github_link(self, event):
+        import webbrowser
+        webbrowser.open("https://github.com/Sarwarhridoy4")
+
+
 class MongoDBExporter(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("MongoDB Exporter")
+        self.setWindowTitle("MongoDB Exporter 2.3.0")
         self.setGeometry(100, 100, 600, 400)
 
         # Set window icon (favicon)
@@ -138,6 +207,23 @@ class MongoDBExporter(QMainWindow):
         load_backup_action.triggered.connect(self.load_backup_script)
         file_menu.addAction(load_backup_action)
 
+        # Add Check for Updates action
+        check_updates_action = QAction('Check for Updates', self)
+        check_updates_action.triggered.connect(self.check_for_updates)
+        file_menu.addAction(check_updates_action)
+
+        # Create the 'About' menu
+        about_menu = menu_bar.addMenu('About')
+
+        # Create 'About MongoDB Exporter' action
+        about_action = QAction('About MongoDB Exporter', self)
+        about_action.triggered.connect(self.show_about_dialog)
+        about_menu.addAction(about_action)
+
+    def show_about_dialog(self):
+        about_dialog = AboutDialog()
+        about_dialog.exec_()
+
     def create_backup_script(self):
         backup_data = {
             'uri': self.uri_input.text(),
@@ -146,7 +232,8 @@ class MongoDBExporter(QMainWindow):
         }
 
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save Backup Script", "", "JSON Files (*.mdbexport);;All Files (*)",
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save Backup Script", "",
+                                                   "JSON Files (*.mdbexport);;All Files (*)",
                                                    options=options)
         if file_name:
             with open(file_name, 'w') as file:
@@ -155,7 +242,8 @@ class MongoDBExporter(QMainWindow):
 
     def load_backup_script(self):
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getOpenFileName(self, "Load Backup Script", "", "JSON Files (*.mdbexport);;All Files (*)",
+        file_name, _ = QFileDialog.getOpenFileName(self, "Load Backup Script", "",
+                                                   "JSON Files (*.mdbexport);;All Files (*)",
                                                    options=options)
         if file_name:
             with open(file_name, 'r') as file:
@@ -230,29 +318,6 @@ class MongoDBExporter(QMainWindow):
             self.export_thread.abort()
             self.abort_button.setDisabled(True)
             self.progress_label.setText("Aborting export...")
-
-
-
-    def create_menu_bar(self):
-        menu_bar = self.menuBar()
-
-        # Create the 'File' menu
-        file_menu = menu_bar.addMenu('File')
-
-        # Create 'Create Backup Script' action
-        create_backup_action = QAction('Create Backup Script', self)
-        create_backup_action.triggered.connect(self.create_backup_script)
-        file_menu.addAction(create_backup_action)
-
-        # Create 'Load Backup Script' action
-        load_backup_action = QAction('Load Backup Script', self)
-        load_backup_action.triggered.connect(self.load_backup_script)
-        file_menu.addAction(load_backup_action)
-
-        # Add Check for Updates action
-        check_updates_action = QAction('Check for Updates', self)
-        check_updates_action.triggered.connect(self.check_for_updates)
-        file_menu.addAction(check_updates_action)
 
     def check_for_updates(self):
         current_version = "2.2.2"  # Replace with your current version
