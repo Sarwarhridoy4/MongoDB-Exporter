@@ -96,6 +96,15 @@ pip install pymongo pyqt5 requests
 2. Make code modular
 3. Add Check For Update Option
 
+
+
+## Version 2.3.0
+
+1. Add About Page
+2. Add Developer Info
+
+
+
 # Get Installer(Windows)
 
 Welcome to MongoDB Exporter! Click the button below to download the latest version.

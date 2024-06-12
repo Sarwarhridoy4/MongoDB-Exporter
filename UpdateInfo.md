@@ -63,3 +63,8 @@
 1. Add new file extension .mdbexport
 2. Make code modular
 3. Add Check For Update Option
+
+## Version 2.3.0
+
+1. Add About Page
+2. Add Developer Info
