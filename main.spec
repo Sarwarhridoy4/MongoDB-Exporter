@@ -1,14 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['main.py'],
-     pathex=['.'],  # Make sure to include the current directory
+    pathex=['.'],  # Make sure to include the current directory
     binaries=[],
     datas=[
         ('./asset/favicon.png', 'asset'),
         ('./asset/mongo_icon.png', 'asset'),
-        ('./asset/mongo_icon.png', 'asset'),
+        ('./asset/developer_image.png', 'asset'),
+        ('./asset/github_icon.png', 'asset'),
     ],
     hiddenimports=[],
     hookspath=[],
@@ -17,8 +17,8 @@ a = Analysis(
     excludes=[],
     noarchive=False,
     optimize=0,
-
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(

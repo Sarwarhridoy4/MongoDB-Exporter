@@ -27,7 +27,7 @@ MongoDB Exporter GUI is a Python-based application with a simple graphical user 
 2. Install the required libraries if not already installed:
 
 ```sh
-pip install pymongo pyqt5
+pip install pymongo pyqt5 requests
 ```
 
 # Key Changes:
@@ -96,10 +96,19 @@ pip install pymongo pyqt5
 2. Make code modular
 3. Add Check For Update Option
 
+
+
+## Version 2.3.0
+
+1. Add About Page
+2. Add Developer Info
+
+
+
 # Get Installer(Windows)
 
 Welcome to MongoDB Exporter! Click the button below to download the latest version.
 
-<a href="https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/2.2.2/MogoDBExporter.exe" download>
+<a href="https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/2.3.0/MogoDB.Exporter.exe" download>
     <img src="https://img.shields.io/badge/Download-Now-brightgreen" alt="Download Now">
 </a>
