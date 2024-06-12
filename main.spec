@@ -9,6 +9,8 @@ a = Analysis(
         ('./asset/favicon.png', 'asset'),
         ('./asset/mongo_icon.png', 'asset'),
         ('./asset/mongo_icon.png', 'asset'),
+        (./asset/developer_image.png),
+        (./asset/github_icon.png)
     ],
     hiddenimports=[],
     hookspath=[],
