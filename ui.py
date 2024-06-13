@@ -320,7 +320,7 @@ class MongoDBExporter(QMainWindow):
             self.progress_label.setText("Aborting export...")
 
     def check_for_updates(self):
-        current_version = "2.2.2"  # Replace with your current version
+        current_version = "2.3.0"  # Replace with your current version
         repo = "Sarwarhridoy4/MongoDB-Exporter"  # Replace with your GitHub repo
 
         self.update_thread = UpdateThread(repo, current_version)
