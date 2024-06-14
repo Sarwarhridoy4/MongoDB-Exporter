@@ -36,7 +36,7 @@ pip install pymongo pyqt5 requests
 
 1. **Confirmation Dialog**:
 
-   - A confirmation dialog (`QMessageBox.question`) is shown when the export button is clicked, asking the user to confirm if they want to start the export process.
+   - A confirmation dialog (`QMessageBox.question`) is shown when the export button clicks, asking the user to confirm if they want to start the export process.
 
 2. **Abort Button**:
 
