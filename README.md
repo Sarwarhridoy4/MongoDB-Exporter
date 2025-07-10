@@ -22,90 +22,94 @@ MongoDB Exporter GUI is a Python-based application with a simple graphical user 
 - `PyQt5` library
 - `requests` library
 
-## Installation
+## Installation (From Source)
 
 1. Clone the repository or download the script.
 2. Install the required libraries if not already installed:
 
-```sh
+```bash
 pip install -r requirements.txt
 ```
 
-# Key Changes:
+---
 
-## Version 2.0.1
+# 🆕 Changelog
 
-1. **Confirmation Dialog**:
+### ✅ Version 2.3.0
 
-   - A confirmation dialog (`QMessageBox.question`) is shown when the export button clicks, asking the user to confirm if they want to start the export process.
+- Add **About Page**
+- Add **Developer Info**
 
-2. **Abort Button**:
+<details>
+<summary>Previous Versions</summary>
 
-   - An "Abort" button has been added to the interface. This button is styled with a red background and white text.
-   - When clicked, it sets a flag to abort the export process.
+### Version 2.2.2
 
-3. **Disable/Enable Buttons**:
+- Add new file extension `.mdbexport`
+- Make code modular
+- Add **Check For Update** option
 
-   - The export and abort buttons are enabled and disabled appropriately during the export process.
-   - The export button is disabled while the export is in progress.
-   - The abort button is disabled when the export is not in progress or after the abort is triggered.
+### Version 2.2.1
 
-4. **Fix Real-time Percentage**:
-   - The real-time percentage progress display has been fixed to show accurate progress during the export process.
-   - Fix the Crashing app while exporting large collections
+- Introduced `.mdbexport` file format
+- Refactored into a modular codebase
 
-## Version 2.0.2
+### Version 2.2.0
 
-1. **Change Font**:
+- Add **Export/Import Script**
 
-   - Change font from Arial to Roboto
+  - Create, save, and reuse JSON export scripts
+  - Auto-load and populate fields on script load
+  - Backup and zip upon export
 
-2. **WaterMark Logo**:
+### Version 2.1.0
 
-   - Add Background Image Watermark Logo
+- **Auto-dated Output Folder**
+- **Zipping** after export for portability
 
-## Version 2.1.0
+### Version 2.0.2
 
-1. **Add Dated Folder**:
+- Switched default font to **Roboto**
+- Added **background watermark logo**
 
-   - Add a Dated Folder inside the Output Folder
+### Version 2.0.1
 
-2. **Add Zipping Feature**:
+- Confirmation dialog before export
+- Abort button with progress tracking
+- Fixed UI freeze during large exports
 
-   - Add Zipping after successful export. It will help reduce the size if you need to upload or send it to anyone.
+</details>
 
-## Version 2.2.0
+---
 
-1. **Export / Import Script added**:
+# 📥 Download
 
-   - Add an option to create and load JSON script.
-   - Fill info once ==> click file menu ==> click create script ==> Give name ==> Save
-   - Create a script once and load it to start exporting automatically.
-   - It will save a backup file to your selected location every time.
-   - Once You load a file it will ask you to start export automatically.
-   - If you select yes it will start and save the backup and zipped folder on your desired location.
-   - If no it does not start immediately but leave input populated with your script information.
+Welcome to MongoDB Exporter! Click the buttons below to download the latest version for your platform:
 
-## Version 2.2.1
+### 🔹 Windows
 
-1. Add new file extension .mdbexport
-2. Make code modular
+👉 [Download for Windows (.exe)](https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/latest/download/MongoDBExporter-Setup.exe)
 
-## Version 2.2.2
+### 🔹 Linux (Debian/Ubuntu)
 
-1. Add new file extension .mdbexport
-2. Make code modular
-3. Add Check For Update Option
+👉 [Download .deb Installer](https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/2.3.0/mongodbexporter_2.3.0_amd64.deb)
 
-## Version 2.3.0
+### 🔹 Linux (Universal AppImage)
 
-1. Add About Page
-2. Add Developer Info
+👉 [Download AppImage](https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/2.3.0/MongoDB_Exporter-x86_64.AppImage)
 
-# Get Installer(Windows)
+---
 
-Welcome to MongoDB Exporter! Click the button below to download the latest version.
+## 💬 Feedback & Issues
 
-<a href="https://github.com/Sarwarhridoy4/MongoDB-Exporter/releases/download/2.3.0/MogoDB.Exporter.exe" download>
-    <img src="https://img.shields.io/badge/Download-Now-brightgreen" alt="Download Now">
-</a>
+If you encounter bugs or have suggestions, feel free to [create an issue](https://github.com/Sarwarhridoy4/MongoDB-Exporter/issues).
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+```
+
+```
