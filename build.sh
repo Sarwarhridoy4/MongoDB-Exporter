@@ -41,7 +41,7 @@ cat > "${BUILD_DIR}/usr/share/applications/${APP_NAME}.desktop" <<EOF
 Type=Application
 Name=MongoDB Exporter
 Exec=/usr/bin/${EXECUTABLE}
-Icon=${ICON_NAME%.*}  # Removes ".png"
+Icon=${ICON_NAME}
 Terminal=false
 Categories=Database;Utility;
 StartupNotify=true
