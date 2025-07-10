@@ -1,0 +1,4 @@
+pymongo
+pyqt5 
+requests
+pyinstaller
