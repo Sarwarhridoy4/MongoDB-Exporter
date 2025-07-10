@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=MongoDB Exporter
-Comment=MongoDB Exporter GUI for exporting collections to JSON
-Exec=AppRun
-Icon=mongodbexporter
-Terminal=false
-Categories=Database;Utility;
-StartupNotify=true
