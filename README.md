@@ -76,12 +76,48 @@ Output artifacts are generated in `release/`.
    - `Upload to Google Drive` + service account JSON (+ optional folder ID)
 4. Click `Export`.
 
+## Backup Process
+
+1. Set `MongoDB URI`, `Database Name`, and `Output Directory`.
+2. Click `Export`.
+3. App creates a dated folder with JSON exports.
+4. If `Compress Backup (.zip)` is enabled, a ZIP archive is created.
+
+## Encryption Process
+
+1. Enable `Encrypt Backup`.
+2. Enter a password (minimum 8 characters).
+3. Run export.
+4. App creates encrypted backup file: `.zip.enc`.
+
 ## Decrypt Backup
 
 1. Open `File -> Decrypt Backup`.
 2. Select encrypted backup file (`.enc`).
 3. Enter password.
 4. Choose save location for decrypted file (usually `.zip`).
+
+## Google Drive Upload Setup
+
+1. Create a Google Cloud project.
+2. Enable Google Drive API.
+3. Create a Service Account.
+4. Create and download a JSON key for the service account.
+5. Share your target Google Drive folder with the service account email.
+   - Example: `my-service-account@project-id.iam.gserviceaccount.com`
+6. Copy Drive Folder ID from folder URL (optional).
+   - Example URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`
+
+## Google Drive Upload Process
+
+1. Enable `Upload to Google Drive`.
+2. Select service account JSON using `Credentials` button.
+3. Optionally enter `Drive Folder ID`.
+4. Start export.
+5. App uploads generated backup artifact:
+   - If encryption enabled: uploads `.enc`
+   - Else: uploads `.zip`
+6. Final success message includes Google Drive file ID and web link.
 
 ## Backup Script (`.mdbexport`)
 
