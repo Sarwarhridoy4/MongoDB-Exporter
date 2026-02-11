@@ -1,12 +1,18 @@
 import json
+import os
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QAction, QDialog
+    QHBoxLayout, QWidget, QFileDialog, QMessageBox, QProgressBar, QGraphicsOpacityEffect, QDialog, QApplication,
+    QCheckBox, QInputDialog
 )
-from PyQt5.QtGui import QFont, QPixmap, QIcon
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtGui import QAction, QActionGroup, QFont, QPixmap, QIcon
+from PySide6.QtCore import Qt
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from export_thread import ExportThread
 from updater import UpdateThread
@@ -88,6 +94,7 @@ class MongoDBExporter(QMainWindow):
 
         self.setWindowTitle("MongoDB Exporter 2.3.0")
         self.setGeometry(100, 100, 600, 400)
+        self.theme_mode = "system"
 
         # Set window icon (favicon)
         self.setWindowIcon(QIcon(resource_path("./asset/favicon.png")))  # Provide the path to your favicon file
@@ -156,16 +163,32 @@ class MongoDBExporter(QMainWindow):
         output_dir_layout.addWidget(self.browse_button)
         main_layout.addLayout(output_dir_layout)
 
+        # Backup options
+        backup_options_layout = QHBoxLayout()
+        self.compress_checkbox = QCheckBox("Compress Backup (.zip)", self)
+        self.compress_checkbox.setChecked(True)
+        self.encrypt_checkbox = QCheckBox("Encrypt Backup", self)
+        self.encrypt_checkbox.toggled.connect(self.toggle_encryption_password)
+        self.encrypt_password_input = QLineEdit(self)
+        self.encrypt_password_input.setPlaceholderText("Encryption password")
+        self.encrypt_password_input.setEchoMode(QLineEdit.Password)
+        self.encrypt_password_input.setEnabled(False)
+        backup_options_layout.addWidget(self.compress_checkbox)
+        backup_options_layout.addWidget(self.encrypt_checkbox)
+        backup_options_layout.addWidget(self.encrypt_password_input)
+        main_layout.addLayout(backup_options_layout)
+
         # Export Button
         self.export_button = QPushButton("Export", self)
+        self.export_button.setObjectName("primaryButton")
         self.export_button.setFont(QFont('Roboto', 12))
         self.export_button.clicked.connect(self.confirm_start_export)
         main_layout.addWidget(self.export_button, alignment=Qt.AlignCenter)
 
         # Abort Button
         self.abort_button = QPushButton("Abort", self)
+        self.abort_button.setObjectName("dangerButton")
         self.abort_button.setFont(QFont('Roboto', 12))
-        self.abort_button.setStyleSheet("background-color: red; color: white;")
         self.abort_button.clicked.connect(self.abort_export)
         self.abort_button.setDisabled(True)
         main_layout.addWidget(self.abort_button, alignment=Qt.AlignCenter)
@@ -190,6 +213,8 @@ class MongoDBExporter(QMainWindow):
 
         # Create the menu bar
         self.create_menu_bar()
+        self.apply_theme()
+        self.observe_system_theme_changes()
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
@@ -212,6 +237,11 @@ class MongoDBExporter(QMainWindow):
         check_updates_action.triggered.connect(self.check_for_updates)
         file_menu.addAction(check_updates_action)
 
+        # Add Decrypt Backup action
+        decrypt_backup_action = QAction('Decrypt Backup', self)
+        decrypt_backup_action.triggered.connect(self.decrypt_backup_file)
+        file_menu.addAction(decrypt_backup_action)
+
         # Create the 'About' menu
         about_menu = menu_bar.addMenu('About')
 
@@ -220,15 +250,238 @@ class MongoDBExporter(QMainWindow):
         about_action.triggered.connect(self.show_about_dialog)
         about_menu.addAction(about_action)
 
+        # Create theme menu
+        theme_menu = menu_bar.addMenu('Theme')
+        theme_group = QActionGroup(self)
+        theme_group.setExclusive(True)
+
+        self.theme_actions = {
+            "system": QAction("System", self, checkable=True),
+            "light": QAction("Light", self, checkable=True),
+            "dark": QAction("Dark", self, checkable=True)
+        }
+
+        for mode, action in self.theme_actions.items():
+            action.triggered.connect(lambda checked, selected=mode: self.set_theme(selected))
+            theme_group.addAction(action)
+            theme_menu.addAction(action)
+
+        self.theme_actions["system"].setChecked(True)
+
+    def toggle_encryption_password(self, checked):
+        self.encrypt_password_input.setEnabled(checked)
+        if not checked:
+            self.encrypt_password_input.clear()
+
+    def set_theme(self, mode):
+        self.theme_mode = mode
+        self.apply_theme()
+
+    def observe_system_theme_changes(self):
+        style_hints = QApplication.instance().styleHints()
+        if hasattr(style_hints, "colorSchemeChanged"):
+            style_hints.colorSchemeChanged.connect(self.handle_system_theme_change)
+
+    def handle_system_theme_change(self, _scheme):
+        if self.theme_mode == "system":
+            self.apply_theme()
+
+    def detect_system_theme(self):
+        app = QApplication.instance()
+        style_hints = app.styleHints()
+
+        if hasattr(style_hints, "colorScheme"):
+            scheme = style_hints.colorScheme()
+            if scheme == Qt.ColorScheme.Dark:
+                return "dark"
+            return "light"
+
+        window_color = app.palette().window().color()
+        return "dark" if window_color.lightness() < 128 else "light"
+
+    def apply_theme(self):
+        selected_theme = self.theme_mode
+        if selected_theme == "system":
+            selected_theme = self.detect_system_theme()
+
+        qss = self.build_neumorphism_qss(selected_theme)
+        QApplication.instance().setStyleSheet(qss)
+
+    def build_neumorphism_qss(self, theme):
+        if theme == "dark":
+            return """
+                QMainWindow, QWidget, QDialog {
+                    background-color: #242931;
+                    color: #e8edf2;
+                    font-family: 'Roboto';
+                }
+                QLabel {
+                    color: #e8edf2;
+                }
+                QCheckBox {
+                    color: #e8edf2;
+                    spacing: 8px;
+                    padding: 4px 0;
+                }
+                QCheckBox::indicator {
+                    width: 16px;
+                    height: 16px;
+                    border: 1px solid #1f232a;
+                    border-radius: 4px;
+                    background-color: #2b313a;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #4f9cd8;
+                }
+                QLineEdit, QProgressBar, QMenuBar, QMenu {
+                    background-color: #2b313a;
+                    color: #e8edf2;
+                    border: 1px solid #1f232a;
+                    border-radius: 12px;
+                    padding: 8px;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #5ca7e5;
+                    background-color: #313844;
+                }
+                QPushButton {
+                    background-color: #2b313a;
+                    color: #e8edf2;
+                    border: 1px solid #1f232a;
+                    border-radius: 14px;
+                    padding: 8px 16px;
+                }
+                QPushButton:hover {
+                    background-color: #323a45;
+                }
+                QPushButton:pressed {
+                    background-color: #21262e;
+                }
+                QPushButton:disabled {
+                    color: #8b939f;
+                    background-color: #252a32;
+                }
+                QPushButton#primaryButton {
+                    background-color: #3e7fb8;
+                    color: #ffffff;
+                    border: 1px solid #356f9f;
+                }
+                QPushButton#primaryButton:hover {
+                    background-color: #4a8dc7;
+                }
+                QPushButton#dangerButton {
+                    background-color: #bd4f5d;
+                    color: #ffffff;
+                    border: 1px solid #9f4250;
+                }
+                QPushButton#dangerButton:hover {
+                    background-color: #cc5b6a;
+                }
+                QProgressBar {
+                    text-align: center;
+                }
+                QProgressBar::chunk {
+                    background-color: #4f9cd8;
+                    border-radius: 8px;
+                }
+                QMenuBar::item:selected, QMenu::item:selected {
+                    background-color: #313844;
+                    border-radius: 8px;
+                }
+            """
+
+        return """
+            QMainWindow, QWidget, QDialog {
+                background-color: #e8edf2;
+                color: #1f2a36;
+                font-family: 'Roboto';
+            }
+            QLabel {
+                color: #1f2a36;
+            }
+            QCheckBox {
+                color: #1f2a36;
+                spacing: 8px;
+                padding: 4px 0;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #d4dae1;
+                border-radius: 4px;
+                background-color: #e8edf2;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #4b9fda;
+            }
+            QLineEdit, QProgressBar, QMenuBar, QMenu {
+                background-color: #e8edf2;
+                color: #1f2a36;
+                border: 1px solid #d4dae1;
+                border-radius: 12px;
+                padding: 8px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #4b9fda;
+                background-color: #f1f5f9;
+            }
+            QPushButton {
+                background-color: #e8edf2;
+                color: #1f2a36;
+                border: 1px solid #d4dae1;
+                border-radius: 14px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background-color: #f0f4f8;
+            }
+            QPushButton:pressed {
+                background-color: #dfe6ed;
+            }
+            QPushButton:disabled {
+                color: #8e97a2;
+                background-color: #dfe5ec;
+            }
+            QPushButton#primaryButton {
+                background-color: #3f89c5;
+                color: #ffffff;
+                border: 1px solid #3674a7;
+            }
+            QPushButton#primaryButton:hover {
+                background-color: #4a95d5;
+            }
+            QPushButton#dangerButton {
+                background-color: #d65a67;
+                color: #ffffff;
+                border: 1px solid #b64d58;
+            }
+            QPushButton#dangerButton:hover {
+                background-color: #df6874;
+            }
+            QProgressBar {
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #4b9fda;
+                border-radius: 8px;
+            }
+            QMenuBar::item:selected, QMenu::item:selected {
+                background-color: #dfe7ee;
+                border-radius: 8px;
+            }
+        """
+
     def show_about_dialog(self):
         about_dialog = AboutDialog()
-        about_dialog.exec_()
+        about_dialog.exec()
 
     def create_backup_script(self):
         backup_data = {
             'uri': self.uri_input.text(),
             'db_name': self.db_name_input.text(),
-            'output_dir': self.output_dir_input.text()
+            'output_dir': self.output_dir_input.text(),
+            'compress_backup': self.compress_checkbox.isChecked(),
+            'encrypt_backup': self.encrypt_checkbox.isChecked()
         }
 
         options = QFileDialog.Options()
@@ -251,6 +504,9 @@ class MongoDBExporter(QMainWindow):
                 self.uri_input.setText(backup_data['uri'])
                 self.db_name_input.setText(backup_data['db_name'])
                 self.output_dir_input.setText(backup_data['output_dir'])
+                self.compress_checkbox.setChecked(backup_data.get('compress_backup', True))
+                self.encrypt_checkbox.setChecked(backup_data.get('encrypt_backup', False))
+                self.encrypt_password_input.clear()
 
             reply = QMessageBox.question(
                 self, 'Start Export', 'Do you want to start the export now?',
@@ -276,13 +532,23 @@ class MongoDBExporter(QMainWindow):
         uri = self.uri_input.text()
         db_name = self.db_name_input.text()
         output_dir = self.output_dir_input.text()
+        compress_backup = self.compress_checkbox.isChecked()
+        encrypt_backup = self.encrypt_checkbox.isChecked()
+        encrypt_password = self.encrypt_password_input.text()
 
         if not uri or not db_name or not output_dir:
             QMessageBox.critical(self, "Error", "All fields are required!")
+        elif encrypt_backup and len(encrypt_password) < 8:
+            QMessageBox.critical(self, "Error", "Encryption password must be at least 8 characters.")
         else:
             self.export_button.setDisabled(True)
             self.abort_button.setDisabled(False)
-            self.export_thread = ExportThread(uri, db_name, output_dir)
+            self.export_thread = ExportThread(
+                uri, db_name, output_dir,
+                compress_backup=compress_backup,
+                encrypt_backup=encrypt_backup,
+                encryption_password=encrypt_password
+            )
             self.export_thread.update_progress.connect(self.update_progress)
             self.export_thread.update_zip_progress.connect(self.update_zip_progress)
             self.export_thread.finished.connect(self.export_finished)
@@ -297,7 +563,7 @@ class MongoDBExporter(QMainWindow):
         QApplication.processEvents()
 
     def update_zip_progress(self, zip_progress, file_name):
-        self.progress_label.setText(f"Zipping: {file_name} - Overall {zip_progress:.2f}%")
+        self.progress_label.setText(f"Processing: {file_name} - Overall {zip_progress:.2f}%")
         self.progress_bar.setValue(zip_progress)
         QApplication.processEvents()
 
@@ -354,3 +620,118 @@ class MongoDBExporter(QMainWindow):
     def update_error(self, message):
         self.update_dialog.close()
         QMessageBox.critical(self, "Update Error", message)
+
+    def decrypt_backup_file(self):
+        options = QFileDialog.Options()
+        encrypted_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Encrypted Backup",
+            "",
+            "Encrypted Backup (*.enc);;All Files (*)",
+            options=options
+        )
+        if not encrypted_path:
+            return
+
+        password, ok = QInputDialog.getText(
+            self,
+            "Decrypt Backup",
+            "Enter decryption password:",
+            QLineEdit.Password
+        )
+        if not ok:
+            return
+
+        if not password:
+            QMessageBox.critical(self, "Error", "Password is required to decrypt backup.")
+            return
+
+        default_output = encrypted_path[:-4] if encrypted_path.endswith(".enc") else f"{encrypted_path}.dec"
+        output_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Decrypted Backup",
+            default_output,
+            "ZIP Files (*.zip);;All Files (*)",
+            options=options
+        )
+        if not output_path:
+            return
+
+        try:
+            self.progress_label.setText("Decrypting backup...")
+            self.progress_bar.setValue(0)
+            self.decrypt_file(encrypted_path, output_path, password)
+            self.progress_label.setText(f"Decryption complete: {output_path}")
+            self.progress_bar.setValue(100)
+            QMessageBox.information(self, "Success", f"Backup decrypted successfully:\n{output_path}")
+        except Exception as e:
+            self.progress_label.setText("Decryption failed.")
+            self.progress_bar.setValue(0)
+            QMessageBox.critical(self, "Decryption Error", str(e))
+
+    def decrypt_file(self, encrypted_path, output_path, password):
+        header_size = 6
+        salt_size = 16
+        nonce_size = 12
+        tag_size = 16
+        metadata_size = header_size + salt_size + nonce_size
+
+        with open(encrypted_path, "rb") as source_file:
+            magic = source_file.read(header_size)
+            if magic != b"MDBEX1":
+                raise ValueError("Invalid backup format. This file was not encrypted by MongoDB Exporter.")
+
+            salt = source_file.read(salt_size)
+            nonce = source_file.read(nonce_size)
+
+            source_file.seek(0, os.SEEK_END)
+            total_size = source_file.tell()
+            if total_size <= metadata_size + tag_size:
+                raise ValueError("Encrypted backup file is incomplete or corrupted.")
+
+            source_file.seek(total_size - tag_size)
+            tag = source_file.read(tag_size)
+
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=390000,
+                backend=default_backend()
+            )
+            key = kdf.derive(password.encode("utf-8"))
+            decryptor = Cipher(
+                algorithms.AES(key),
+                modes.GCM(nonce, tag),
+                backend=default_backend()
+            ).decryptor()
+
+            ciphertext_size = total_size - metadata_size - tag_size
+            processed = 0
+            chunk_size = 1024 * 1024
+
+            source_file.seek(metadata_size)
+            with open(output_path, "wb") as output_file:
+                try:
+                    while processed < ciphertext_size:
+                        to_read = min(chunk_size, ciphertext_size - processed)
+                        chunk = source_file.read(to_read)
+                        if not chunk:
+                            break
+                        output_file.write(decryptor.update(chunk))
+                        processed += len(chunk)
+                        progress = int((processed / ciphertext_size) * 100)
+                        self.progress_bar.setValue(progress)
+                        QApplication.processEvents()
+
+                    output_file.write(decryptor.finalize())
+                except InvalidTag as error:
+                    output_file.close()
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+                    raise ValueError("Invalid password or corrupted encrypted backup.") from error
+                except Exception:
+                    output_file.close()
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+                    raise

@@ -2,13 +2,13 @@ import requests
 import os
 import zipfile
 import time
-from PyQt5.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 
 class UpdateThread(QThread):
-    update_progress = pyqtSignal(int, str)
-    update_finished = pyqtSignal(str)
-    update_error = pyqtSignal(str)
+    update_progress = Signal(int, str)
+    update_finished = Signal(str)
+    update_error = Signal(str)
 
     def __init__(self, repo, current_version):
         super().__init__()

@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules
 
 a = Analysis(
     ['main.py'],
@@ -9,8 +10,9 @@ a = Analysis(
         ('./asset/mongo_icon.png', 'asset'),
         ('./asset/developer_image.png', 'asset'),
         ('./asset/github_icon.png', 'asset'),
+        ('./License.lic', '.'),
     ],
-    hiddenimports=[],
+    hiddenimports=collect_submodules('cryptography'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
