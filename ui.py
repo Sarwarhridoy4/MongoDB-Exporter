@@ -208,7 +208,6 @@ class MongoDBExporter(QMainWindow):
         self.export_button.setObjectName("primaryButton")
         self.export_button.setFont(QFont('Roboto', 12))
         self.export_button.clicked.connect(self.confirm_start_export)
-        main_layout.addWidget(self.export_button, alignment=Qt.AlignCenter)
 
         # Abort Button
         self.abort_button = QPushButton("Abort", self)
@@ -216,7 +215,14 @@ class MongoDBExporter(QMainWindow):
         self.abort_button.setFont(QFont('Roboto', 12))
         self.abort_button.clicked.connect(self.abort_export)
         self.abort_button.setDisabled(True)
-        main_layout.addWidget(self.abort_button, alignment=Qt.AlignCenter)
+
+        # Keep primary actions on the same row
+        action_buttons_layout = QHBoxLayout()
+        action_buttons_layout.addStretch()
+        action_buttons_layout.addWidget(self.export_button)
+        action_buttons_layout.addWidget(self.abort_button)
+        action_buttons_layout.addStretch()
+        main_layout.addLayout(action_buttons_layout)
 
         # Progress Label and Bar
         self.progress_label = QLabel("Progress: ", self)
@@ -231,8 +237,8 @@ class MongoDBExporter(QMainWindow):
         self.setCentralWidget(container)
 
         # Add margins and spacing
-        main_layout.setContentsMargins(30, 30, 30, 30)
-        main_layout.setSpacing(25)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(14)
 
         self.export_thread = None
 
