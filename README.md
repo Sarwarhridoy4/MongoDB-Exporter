@@ -76,6 +76,16 @@ Output artifacts are generated in `release/`.
    - `Upload to Google Drive` + service account JSON (+ optional folder ID)
 4. Click `Export`.
 
+## UI Screenshot
+
+Light theme:
+
+![MongoDB Exporter Light UI](asset/ScreenShot/light.png)
+
+Dark theme:
+
+![MongoDB Exporter Dark UI](asset/ScreenShot/dark.png)
+
 ## Backup Process
 
 1. Set `MongoDB URI`, `Database Name`, and `Output Directory`.
@@ -99,13 +109,20 @@ Output artifacts are generated in `release/`.
 
 ## Google Drive Upload Setup
 
-1. Create a Google Cloud project.
-2. Enable Google Drive API.
-3. Create a Service Account.
-4. Create and download a JSON key for the service account.
-5. Share your target Google Drive folder with the service account email.
+1. Open Google Cloud Console:
+   - `https://console.cloud.google.com/`
+2. Create or select a project:
+   - `https://console.cloud.google.com/projectcreate`
+3. Enable Google Drive API:
+   - `https://console.cloud.google.com/apis/library/drive.googleapis.com`
+4. Create a Service Account:
+   - `IAM & Admin -> Service Accounts`
+   - Direct link: `https://console.cloud.google.com/iam-admin/serviceaccounts`
+5. Open the service account -> `Keys` tab -> `Add Key -> Create new key -> JSON`.
+6. Download the JSON credentials file and use this file in the app (`Credentials` button).
+7. Share your target Google Drive folder with the service account email.
    - Example: `my-service-account@project-id.iam.gserviceaccount.com`
-6. Copy Drive Folder ID from folder URL (optional).
+8. Copy Drive Folder ID from folder URL (optional).
    - Example URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`
 
 ## Google Drive Upload Process
