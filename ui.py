@@ -34,6 +34,7 @@ class AboutDialog(QDialog):
         logo_label = QLabel(self)
         pixmap = QPixmap(resource_path("./asset/mongo_icon.png"))
         logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        logo_label.setFixedSize(72, 72)
         logo_label.setAlignment(Qt.AlignCenter)
 
         # Application name and version
@@ -122,6 +123,8 @@ class MongoDBExporter(QMainWindow):
         self.logo_label = QLabel(self)
         pixmap = QPixmap(resource_path("./asset/mongo_icon.png"))  # Provide the path to your logo image
         self.logo_label.setPixmap(pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.logo_label.setFixedSize(72, 72)
+        self.logo_label.setAlignment(Qt.AlignCenter)
         self.title_label = QLabel("MongoDB Exporter", self)
         self.title_label.setFont(QFont('Roboto', 18, QFont.Bold))
 
