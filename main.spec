@@ -12,7 +12,12 @@ a = Analysis(
         ('./asset/github_icon.png', 'asset'),
         ('./License.lic', '.'),
     ],
-    hiddenimports=collect_submodules('cryptography'),
+    hiddenimports=(
+        collect_submodules('cryptography')
+        + collect_submodules('googleapiclient')
+        + collect_submodules('google.auth')
+        + collect_submodules('google.oauth2')
+    ),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

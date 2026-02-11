@@ -13,6 +13,7 @@ MongoDB Exporter GUI is a desktop application built with `PySide6` that exports 
 - Auto-create a dated backup folder in output directory.
 - Optional backup compression to `.zip`.
 - Optional backup encryption to `.enc` using AES-GCM.
+- Optional Google Drive upload for generated backup files.
 - In-app backup decryption from `File -> Decrypt Backup`.
 - Real-time progress updates during export/compress/encrypt/decrypt.
 - Export/Import backup scripts using `.mdbexport`.
@@ -26,6 +27,9 @@ MongoDB Exporter GUI is a desktop application built with `PySide6` that exports 
 - `PySide6`
 - `requests`
 - `cryptography`
+- `google-api-python-client`
+- `google-auth`
+- `google-auth-httplib2`
 
 ## Installation
 
@@ -69,6 +73,7 @@ Output artifacts are generated in `release/`.
 3. Choose backup options:
    - `Compress Backup (.zip)`
    - `Encrypt Backup` + password (minimum 8 characters)
+   - `Upload to Google Drive` + service account JSON (+ optional folder ID)
 4. Click `Export`.
 
 ## Decrypt Backup
@@ -92,6 +97,7 @@ Output artifacts are generated in `release/`.
 - Added neumorphism QSS UI styling.
 - Added theme switcher (`System`, `Light`, `Dark`).
 - Added backup options for compression and encryption.
+- Added optional Google Drive upload using service account credentials.
 - Added AES-GCM encrypted backup generation (`.enc`).
 - Added in-app encrypted backup decryption flow.
 - Added `cryptography` dependency.

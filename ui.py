@@ -178,6 +178,25 @@ class MongoDBExporter(QMainWindow):
         backup_options_layout.addWidget(self.encrypt_password_input)
         main_layout.addLayout(backup_options_layout)
 
+        # Cloud options
+        cloud_options_layout = QHBoxLayout()
+        self.upload_drive_checkbox = QCheckBox("Upload to Google Drive", self)
+        self.upload_drive_checkbox.toggled.connect(self.toggle_drive_upload_options)
+        self.drive_credentials_input = QLineEdit(self)
+        self.drive_credentials_input.setPlaceholderText("Service account JSON credentials")
+        self.drive_credentials_input.setEnabled(False)
+        self.drive_credentials_browse_button = QPushButton("Credentials", self)
+        self.drive_credentials_browse_button.setEnabled(False)
+        self.drive_credentials_browse_button.clicked.connect(self.browse_drive_credentials)
+        self.drive_folder_id_input = QLineEdit(self)
+        self.drive_folder_id_input.setPlaceholderText("Drive Folder ID (optional)")
+        self.drive_folder_id_input.setEnabled(False)
+        cloud_options_layout.addWidget(self.upload_drive_checkbox)
+        cloud_options_layout.addWidget(self.drive_credentials_input)
+        cloud_options_layout.addWidget(self.drive_credentials_browse_button)
+        cloud_options_layout.addWidget(self.drive_folder_id_input)
+        main_layout.addLayout(cloud_options_layout)
+
         # Export Button
         self.export_button = QPushButton("Export", self)
         self.export_button.setObjectName("primaryButton")
@@ -272,6 +291,14 @@ class MongoDBExporter(QMainWindow):
         self.encrypt_password_input.setEnabled(checked)
         if not checked:
             self.encrypt_password_input.clear()
+
+    def toggle_drive_upload_options(self, checked):
+        self.drive_credentials_input.setEnabled(checked)
+        self.drive_credentials_browse_button.setEnabled(checked)
+        self.drive_folder_id_input.setEnabled(checked)
+        if not checked:
+            self.drive_credentials_input.clear()
+            self.drive_folder_id_input.clear()
 
     def set_theme(self, mode):
         self.theme_mode = mode
@@ -481,7 +508,10 @@ class MongoDBExporter(QMainWindow):
             'db_name': self.db_name_input.text(),
             'output_dir': self.output_dir_input.text(),
             'compress_backup': self.compress_checkbox.isChecked(),
-            'encrypt_backup': self.encrypt_checkbox.isChecked()
+            'encrypt_backup': self.encrypt_checkbox.isChecked(),
+            'upload_to_drive': self.upload_drive_checkbox.isChecked(),
+            'drive_credentials_path': self.drive_credentials_input.text(),
+            'drive_folder_id': self.drive_folder_id_input.text()
         }
 
         options = QFileDialog.Options()
@@ -507,6 +537,9 @@ class MongoDBExporter(QMainWindow):
                 self.compress_checkbox.setChecked(backup_data.get('compress_backup', True))
                 self.encrypt_checkbox.setChecked(backup_data.get('encrypt_backup', False))
                 self.encrypt_password_input.clear()
+                self.upload_drive_checkbox.setChecked(backup_data.get('upload_to_drive', False))
+                self.drive_credentials_input.setText(backup_data.get('drive_credentials_path', ''))
+                self.drive_folder_id_input.setText(backup_data.get('drive_folder_id', ''))
 
             reply = QMessageBox.question(
                 self, 'Start Export', 'Do you want to start the export now?',
@@ -519,6 +552,18 @@ class MongoDBExporter(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory")
         if directory:
             self.output_dir_input.setText(directory)
+
+    def browse_drive_credentials(self):
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Google Service Account Credentials",
+            "",
+            "JSON Files (*.json);;All Files (*)",
+            options=options
+        )
+        if file_name:
+            self.drive_credentials_input.setText(file_name)
 
     def confirm_start_export(self):
         reply = QMessageBox.question(
@@ -535,11 +580,18 @@ class MongoDBExporter(QMainWindow):
         compress_backup = self.compress_checkbox.isChecked()
         encrypt_backup = self.encrypt_checkbox.isChecked()
         encrypt_password = self.encrypt_password_input.text()
+        upload_to_drive = self.upload_drive_checkbox.isChecked()
+        drive_credentials_path = self.drive_credentials_input.text()
+        drive_folder_id = self.drive_folder_id_input.text()
 
         if not uri or not db_name or not output_dir:
             QMessageBox.critical(self, "Error", "All fields are required!")
         elif encrypt_backup and len(encrypt_password) < 8:
             QMessageBox.critical(self, "Error", "Encryption password must be at least 8 characters.")
+        elif upload_to_drive and not drive_credentials_path:
+            QMessageBox.critical(self, "Error", "Google Drive credentials JSON is required for upload.")
+        elif upload_to_drive and not os.path.isfile(drive_credentials_path):
+            QMessageBox.critical(self, "Error", "Google Drive credentials file not found.")
         else:
             self.export_button.setDisabled(True)
             self.abort_button.setDisabled(False)
@@ -547,7 +599,10 @@ class MongoDBExporter(QMainWindow):
                 uri, db_name, output_dir,
                 compress_backup=compress_backup,
                 encrypt_backup=encrypt_backup,
-                encryption_password=encrypt_password
+                encryption_password=encrypt_password,
+                upload_to_drive=upload_to_drive,
+                drive_credentials_path=drive_credentials_path,
+                drive_folder_id=drive_folder_id
             )
             self.export_thread.update_progress.connect(self.update_progress)
             self.export_thread.update_zip_progress.connect(self.update_zip_progress)
