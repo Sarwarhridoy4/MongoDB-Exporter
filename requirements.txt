@@ -3,3 +3,6 @@ pyside6
 requests
 pyinstaller
 cryptography
+google-api-python-client
+google-auth
+google-auth-httplib2

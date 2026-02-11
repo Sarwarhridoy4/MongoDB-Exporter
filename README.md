@@ -13,6 +13,7 @@ MongoDB Exporter GUI is a desktop application built with `PySide6` that exports 
 - Auto-create a dated backup folder in output directory.
 - Optional backup compression to `.zip`.
 - Optional backup encryption to `.enc` using AES-GCM.
+- Optional Google Drive upload for generated backup files.
 - In-app backup decryption from `File -> Decrypt Backup`.
 - Real-time progress updates during export/compress/encrypt/decrypt.
 - Export/Import backup scripts using `.mdbexport`.
@@ -26,6 +27,9 @@ MongoDB Exporter GUI is a desktop application built with `PySide6` that exports 
 - `PySide6`
 - `requests`
 - `cryptography`
+- `google-api-python-client`
+- `google-auth`
+- `google-auth-httplib2`
 
 ## Installation
 
@@ -69,7 +73,32 @@ Output artifacts are generated in `release/`.
 3. Choose backup options:
    - `Compress Backup (.zip)`
    - `Encrypt Backup` + password (minimum 8 characters)
+   - `Upload to Google Drive` + service account JSON (+ optional folder ID)
 4. Click `Export`.
+
+## UI Screenshot
+
+Light theme:
+
+![MongoDB Exporter Light UI](asset/ScreenShot/light.png)
+
+Dark theme:
+
+![MongoDB Exporter Dark UI](asset/ScreenShot/dark.png)
+
+## Backup Process
+
+1. Set `MongoDB URI`, `Database Name`, and `Output Directory`.
+2. Click `Export`.
+3. App creates a dated folder with JSON exports.
+4. If `Compress Backup (.zip)` is enabled, a ZIP archive is created.
+
+## Encryption Process
+
+1. Enable `Encrypt Backup`.
+2. Enter a password (minimum 8 characters).
+3. Run export.
+4. App creates encrypted backup file: `.zip.enc`.
 
 ## Decrypt Backup
 
@@ -77,6 +106,35 @@ Output artifacts are generated in `release/`.
 2. Select encrypted backup file (`.enc`).
 3. Enter password.
 4. Choose save location for decrypted file (usually `.zip`).
+
+## Google Drive Upload Setup
+
+1. Open Google Cloud Console:
+   - `https://console.cloud.google.com/`
+2. Create or select a project:
+   - `https://console.cloud.google.com/projectcreate`
+3. Enable Google Drive API:
+   - `https://console.cloud.google.com/apis/library/drive.googleapis.com`
+4. Create a Service Account:
+   - `IAM & Admin -> Service Accounts`
+   - Direct link: `https://console.cloud.google.com/iam-admin/serviceaccounts`
+5. Open the service account -> `Keys` tab -> `Add Key -> Create new key -> JSON`.
+6. Download the JSON credentials file and use this file in the app (`Credentials` button).
+7. Share your target Google Drive folder with the service account email.
+   - Example: `my-service-account@project-id.iam.gserviceaccount.com`
+8. Copy Drive Folder ID from folder URL (optional).
+   - Example URL: `https://drive.google.com/drive/folders/<FOLDER_ID>`
+
+## Google Drive Upload Process
+
+1. Enable `Upload to Google Drive`.
+2. Select service account JSON using `Credentials` button.
+3. Optionally enter `Drive Folder ID`.
+4. Start export.
+5. App uploads generated backup artifact:
+   - If encryption enabled: uploads `.enc`
+   - Else: uploads `.zip`
+6. Final success message includes Google Drive file ID and web link.
 
 ## Backup Script (`.mdbexport`)
 
@@ -92,6 +150,7 @@ Output artifacts are generated in `release/`.
 - Added neumorphism QSS UI styling.
 - Added theme switcher (`System`, `Light`, `Dark`).
 - Added backup options for compression and encryption.
+- Added optional Google Drive upload using service account credentials.
 - Added AES-GCM encrypted backup generation (`.enc`).
 - Added in-app encrypted backup decryption flow.
 - Added `cryptography` dependency.

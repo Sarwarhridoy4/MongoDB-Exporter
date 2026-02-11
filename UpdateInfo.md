@@ -9,6 +9,7 @@
 2. Backup Options
    - Added `Compress Backup (.zip)` option.
    - Added `Encrypt Backup` option with password input.
+   - Added `Upload to Google Drive` option with credential path and optional folder ID.
    - Enforced minimum password length (8 characters) for encryption.
 
 3. Security and Encryption
@@ -28,6 +29,7 @@
 
 6. Dependencies
    - Added `cryptography` to `requirements.txt`.
+   - Added Google Drive API dependencies (`google-api-python-client`, `google-auth`, `google-auth-httplib2`).
 
 ## Version 2.3.0
 

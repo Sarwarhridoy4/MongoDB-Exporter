@@ -8,6 +8,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 from pymongo import MongoClient
 from bson.json_util import dumps
 
@@ -18,7 +21,18 @@ class ExportThread(QThread):
     finished = Signal(str)
     error_occurred = Signal(str)
 
-    def __init__(self, uri, db_name, output_dir, compress_backup=True, encrypt_backup=False, encryption_password=""):
+    def __init__(
+        self,
+        uri,
+        db_name,
+        output_dir,
+        compress_backup=True,
+        encrypt_backup=False,
+        encryption_password="",
+        upload_to_drive=False,
+        drive_credentials_path="",
+        drive_folder_id=""
+    ):
         super().__init__()
         self.uri = uri
         self.db_name = db_name
@@ -26,6 +40,9 @@ class ExportThread(QThread):
         self.compress_backup = compress_backup
         self.encrypt_backup = encrypt_backup
         self.encryption_password = encryption_password
+        self.upload_to_drive = upload_to_drive
+        self.drive_credentials_path = drive_credentials_path
+        self.drive_folder_id = drive_folder_id
         self.abort_flag = False
         self.lock = threading.Lock()
         self.total_collections = 0
@@ -75,17 +92,25 @@ class ExportThread(QThread):
             outputs = [self.output_dir]
             target_file = None
 
-            if self.compress_backup or self.encrypt_backup:
+            if self.compress_backup or self.encrypt_backup or self.upload_to_drive:
                 target_file = self.zip_output_folder()
                 if target_file is None:
                     return
                 outputs.append(target_file)
 
+            final_file = target_file
             if self.encrypt_backup:
                 encrypted_file = self.encrypt_file(target_file, self.encryption_password)
                 if encrypted_file is None:
                     return
                 outputs.append(encrypted_file)
+                final_file = encrypted_file
+
+            if self.upload_to_drive:
+                upload_result = self.upload_to_google_drive(final_file)
+                if upload_result is None:
+                    return
+                outputs.append(upload_result)
 
             self.finished.emit("Export completed successfully!\nOutput:\n" + "\n".join(outputs))
         except Exception as e:
@@ -222,6 +247,52 @@ class ExportThread(QThread):
 
         self.update_zip_progress.emit(100, "Encryption complete")
         return output_file_path
+
+    def upload_to_google_drive(self, file_path):
+        if not file_path or not os.path.isfile(file_path):
+            self.error_occurred.emit("Unable to upload: backup file not found.")
+            return None
+
+        if not self.drive_credentials_path or not os.path.isfile(self.drive_credentials_path):
+            self.error_occurred.emit("Google Drive credentials JSON file is missing.")
+            return None
+
+        if self.abort_flag:
+            self.finished.emit("Export aborted by user.")
+            return None
+
+        scopes = ["https://www.googleapis.com/auth/drive.file"]
+        creds = service_account.Credentials.from_service_account_file(
+            self.drive_credentials_path,
+            scopes=scopes
+        )
+        service = build("drive", "v3", credentials=creds, cache_discovery=False)
+
+        metadata = {"name": os.path.basename(file_path)}
+        if self.drive_folder_id:
+            metadata["parents"] = [self.drive_folder_id]
+
+        media = MediaFileUpload(file_path, resumable=True)
+        request = service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id,name,webViewLink"
+        )
+
+        response = None
+        while response is None:
+            if self.abort_flag:
+                self.finished.emit("Export aborted by user.")
+                return None
+            status, response = request.next_chunk()
+            if status:
+                progress = int(status.progress() * 100)
+                self.update_zip_progress.emit(progress, "Uploading to Google Drive")
+
+        file_id = response.get("id", "")
+        web_link = response.get("webViewLink", "")
+        self.update_zip_progress.emit(100, "Google Drive upload complete")
+        return f"Google Drive file id: {file_id}\nGoogle Drive link: {web_link}"
 
     def abort(self):
         self.abort_flag = True
